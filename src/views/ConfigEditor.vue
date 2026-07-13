@@ -4,7 +4,7 @@
     <header class="editor-header">
       <div class="header-left">
         <span class="app-title">Configurator</span>
-        <TemplateSelector />
+        <TemplateSelector v-model:show="showDatasetModal" />
         <input
           v-if="template"
           v-model="templateName"
@@ -39,8 +39,15 @@
       <pre>{{ fetchError }}</pre>
     </div>
 
-    <!-- Loading -->
-    <div v-else-if="!template" class="loading">Loading template…</div>
+    <!-- Welcome / empty state -->
+    <div v-else-if="!template" class="welcome">
+      <div class="welcome-card">
+        <div class="welcome-icon">🗂</div>
+        <h2 class="welcome-title">No dataset selected</h2>
+        <p class="welcome-hint">Pick a dataset from the list to start editing its configuration.</p>
+        <button class="welcome-btn" @click="showDatasetModal = true">Select Dataset →</button>
+      </div>
+    </div>
 
     <!-- Editor body -->
     <div v-else class="editor-body">
@@ -110,6 +117,7 @@ const { template, isDirty, saveStatus, fetchError, mode } = storeToRefs(store)
 
 const templateName = ref('')
 const showImport = ref(false)
+const showDatasetModal = ref(false)
 const importText = ref('')
 const importError = ref('')
 
@@ -142,7 +150,7 @@ watch(template, (val) => {
   if (val) templateName.value = val.name || ''
 }, { immediate: true })
 
-store.fetchTemplate(1)
+store.fetchTemplateList()
 
 function updateMeta() {
   store.setTemplateMeta({ name: templateName.value })
@@ -356,14 +364,43 @@ function doImport() {
   padding: 8px 4px 24px 8px;
 }
 
-.loading {
+.welcome {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #9ca3af;
-  font-size: 14px;
+  background: #f9fafb;
 }
+
+.welcome-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 48px 56px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+  text-align: center;
+  max-width: 400px;
+}
+
+.welcome-icon { font-size: 48px; line-height: 1; }
+.welcome-title { font-size: 20px; font-weight: 700; color: #111; margin: 0; }
+.welcome-hint { font-size: 14px; color: #6b7280; margin: 0; line-height: 1.5; }
+
+.welcome-btn {
+  margin-top: 8px;
+  background: #4f46e5;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.welcome-btn:hover { background: #4338ca; }
 
 .fetch-error {
   flex: 1;
