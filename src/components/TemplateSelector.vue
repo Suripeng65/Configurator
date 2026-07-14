@@ -90,7 +90,7 @@
     </template>
   </BModal>
 
-  <!-- Create / Duplicate inline modal -->
+  <!-- Create / Duplicate modal -->
   <BModal
     v-model="showCreateForm"
     :title="creatingMode === 'duplicate' ? 'Duplicate Dataset' : 'New Blank Dataset'"
@@ -139,11 +139,11 @@ const localShow = computed({
 })
 
 const fields = [
-  { key: 'indicator', label: '',            thStyle: 'width:32px' },
-  { key: 'name',      label: 'Name' },
-  { key: 'modified',  label: 'Last Modified', thStyle: 'width:140px' },
-  { key: 'modifiedBy', label: 'Modified By',  thStyle: 'width:120px' },
-  { key: 'actions',   label: '',            thStyle: 'width:150px' },
+  { key: 'indicator',  label: '',              thStyle: 'width:32px' },
+  { key: 'name',       label: 'Name' },
+  { key: 'modified',   label: 'Last Modified', thStyle: 'width:140px' },
+  { key: 'modifiedBy', label: 'Modified By',   thStyle: 'width:120px' },
+  { key: 'actions',    label: '',              thStyle: 'width:150px' },
 ]
 
 function rowClass(item) {
@@ -163,7 +163,7 @@ function handleDelete(item) {
   store.deleteTemplate(item.id)
 }
 
-function startCreate(mode) {
+async function startCreate(mode) {
   creatingMode.value = mode
   newName.value = (mode === 'duplicate' && current.value) ? current.value.name + ' (copy)' : ''
   showCreateForm.value = true

@@ -19,7 +19,7 @@ export const useTemplateStore = defineStore('template', {
     isDirty: false,
     saveStatus: null,   // null | 'saving' | 'saved' | 'error'
     fetchError: null,
-    mode: 'dev',        // 'dev' | 'user'
+    mode: 'user',       // 'dev' | 'user'
   }),
 
   actions: {
@@ -155,6 +155,24 @@ export const useTemplateStore = defineStore('template', {
       }
     },
 
+    async fetchTemplateByDsId(dsId) {
+      try {
+        const res = await axios.get(`${API}/templates/by-dsid/${dsId}`)
+        this.template = res.data
+        this.isDirty = false
+        this.saveStatus = null
+        this.fetchError = null
+        this.fetchTemplateList()
+      } catch (e) {
+        if (e.response?.status === 404) {
+          this.template = null
+          this.fetchError = null
+        } else {
+          this.fetchError = 'Cannot connect to the backend.'
+        }
+      }
+    },
+
     async saveTemplate() {
       if (!this.template) return
       this.saveStatus = 'saving'
@@ -177,8 +195,8 @@ export const useTemplateStore = defineStore('template', {
       }
     },
 
-    async createTemplate({ name, description, layout }) {
-      const res = await axios.post(`${API}/templates`, { name, description, layout })
+    async createTemplate({ name, description, layout, ds_id, site_code, container_id }) {
+      const res = await axios.post(`${API}/templates`, { name, description, layout, ds_id, site_code, container_id })
       this.template = res.data
       this.isDirty = false
       this.saveStatus = null
