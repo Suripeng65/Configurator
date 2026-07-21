@@ -28,10 +28,7 @@
             @keyup.enter="commitEdit"
             @keyup.escape="cancelEdit"
           />
-          <span
-            v-else
-            @dblclick.stop="startEdit(tab.key, tab.title)"
-          >{{ tab.title }}</span>
+          <span v-else @dblclick.stop="startEdit(tab.key, tab.title)">{{ tab.title }}</span>
           <span
             v-if="activeTabIndex === i && editingTab !== tab.key"
             class="tab-close ms-2"
@@ -40,12 +37,130 @@
           >×</span>
         </template>
 
-        <TabContent :key="tab.key" :tabKey="tab.key" />
+        <!-- Tab body -->
+        <div class="content-body">
+
+          <!-- Grid builder -->
+          <BCard class="mb-3">
+            <template #header>
+              <div class="d-flex align-items-baseline gap-2 flex-wrap">
+                <strong class="small">Dashboard Layout</strong>
+                <span class="text-muted" style="font-size:11px">Rows are horizontal bands. Cells within a row split it vertically.</span>
+              </div>
+            </template>
+
+            <div class="grid-preview mb-3">
+              <div
+                v-for="(row, ri) in gridRows"
+                :key="ri"
+                class="preview-row"
+                :style="{ flex: row.size }"
+              >
+                <div
+                  v-for="(cell, ci) in row.cells"
+                  :key="ci"
+                  class="preview-cell"
+                  :style="{ flex: cell.size }"
+                >
+                  <span class="cell-id-label">{{ cellId(ri, ci) }}</span>
+                  <BFormSelect v-model="cell.chart" size="sm">
+                    <option v-for="c in CHART_TYPES" :key="c.v" :value="c.v">{{ c.l }}</option>
+                    <optgroup v-if="adaptChartTypes.length" label="Adapt Library">
+                      <option v-for="c in adaptChartTypes" :key="c.v" :value="c.v">{{ c.l }}</option>
+                    </optgroup>
+                  </BFormSelect>
+                  <div class="d-flex align-items-center justify-content-between gap-1 mt-1">
+                    <BInputGroup size="sm">
+                      <BInputGroupText>w</BInputGroupText>
+                      <BFormInput type="number" v-model.number="cell.size" min="5" max="95" style="width:46px" @change="clampCellSizes(ri)" />
+                      <BInputGroupText>%</BInputGroupText>
+                    </BInputGroup>
+                    <BButton v-if="row.cells.length > 1" variant="link" size="sm" class="text-danger p-0 lh-1" @click="removeCell(ri, ci)" title="Remove cell">×</BButton>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex flex-column gap-1 mb-3">
+              <div v-for="(row, ri) in gridRows" :key="ri" class="d-flex align-items-center gap-2 px-2 py-1 bg-light rounded">
+                <span class="text-muted small" style="min-width:46px">Row {{ ri + 1 }}</span>
+                <BInputGroup size="sm" style="width:auto">
+                  <BInputGroupText>h</BInputGroupText>
+                  <BFormInput type="number" v-model.number="row.size" min="5" max="95" style="width:50px" @change="clampRowSizes" />
+                  <BInputGroupText>%</BInputGroupText>
+                </BInputGroup>
+                <BButton size="sm" variant="outline-secondary" :disabled="row.cells.length >= 4" @click="addCell(ri)">+ cell</BButton>
+                <BButton size="sm" variant="outline-danger" :disabled="gridRows.length === 1" @click="removeRow(ri)">× row</BButton>
+              </div>
+            </div>
+
+            <BButton variant="outline-secondary" size="sm" :disabled="gridRows.length >= 6" @click="addRow">+ Add Row</BButton>
+          </BCard>
+
+          <!-- Cell configuration -->
+          <BCard v-if="storedCells.length" class="mb-3">
+            <template #header>
+              <div class="d-flex align-items-baseline gap-2 flex-wrap">
+                <strong class="small">Cell Configuration</strong>
+                <span class="text-muted" style="font-size:11px">Set field values for each chart cell in this tab.</span>
+              </div>
+            </template>
+
+            <div v-for="(cell, ci) in storedCells" :key="ci" class="cell-config" :class="{ 'mt-2': ci > 0 }">
+              <div class="d-flex align-items-center gap-2 px-3 py-2 bg-light border-bottom">
+                <code class="small text-primary">{{ cell.cell }}</code>
+                <strong class="small">{{ adaptLibrary[cell.component]?.label ?? cell.component }}</strong>
+              </div>
+              <div v-if="adaptLibrary[cell.component]?.fields?.length" class="px-3 py-2">
+                <BFormGroup
+                  v-for="field in adaptLibrary[cell.component].fields"
+                  :key="field.key"
+                  :label="field.key"
+                  label-cols="4"
+                  label-class="font-monospace small text-muted"
+                  class="mb-2"
+                >
+                  <BFormSelect
+                    v-if="field.type === 'datasource'"
+                    size="sm"
+                    :model-value="cell[field.key] ?? '/'"
+                    @update:model-value="setCellField(ci, field.key, $event)"
+                  >
+                    <option value="/">/ (default)</option>
+                    <option v-for="ds in storedDatasources" :key="ds" :value="ds">{{ ds }}</option>
+                  </BFormSelect>
+                  <BFormInput
+                    v-else-if="field.type === 'number'"
+                    type="number"
+                    size="sm"
+                    :model-value="cell[field.key] ?? (field.default ?? 0)"
+                    @change="setCellField(ci, field.key, Number($event.target.value))"
+                  />
+                  <BFormCheckbox
+                    v-else-if="field.type === 'boolean'"
+                    :model-value="cell[field.key] ?? (field.default ?? false)"
+                    @update:model-value="setCellField(ci, field.key, $event)"
+                  />
+                  <BFormInput
+                    v-else
+                    size="sm"
+                    :model-value="cell[field.key] ?? (field.default ?? '')"
+                    @change="setCellField(ci, field.key, $event.target.value)"
+                  />
+                </BFormGroup>
+              </div>
+              <div v-else class="px-3 py-2 text-muted small fst-italic">"{{ cell.component }}" has no adapt library fields defined.</div>
+            </div>
+          </BCard>
+
+          <BButton variant="primary" size="sm" @click="saveTab">Save Layout</BButton>
+
+        </div>
       </BTab>
 
       <template #tabs-end>
         <li class="nav-item d-flex align-items-center">
-          <button class="add-tab-btn" @click="showNewModal = true">+ Tab</button>
+          <BButton variant="link" size="sm" class="add-tab-btn" @click="showNewModal = true">+ Tab</BButton>
         </li>
       </template>
     </BTabs>
@@ -87,17 +202,20 @@
 
 <script setup>
 import { ref, computed, watch, inject, nextTick } from 'vue'
-import { BTabs, BTab, BModal, BForm, BFormGroup, BFormInput } from 'bootstrap-vue-next'
+import { BTabs, BTab, BModal, BForm, BFormGroup, BFormInput, BFormSelect, BFormCheckbox, BInputGroup, BInputGroupText, BButton, BCard } from 'bootstrap-vue-next'
 import { useLayoutEditor } from '@src/composables/useLayoutEditor.js'
 import WorkspacePanel from '@src/components/user/WorkspacePanel.vue'
-import TabContent from '@src/components/user/TabContent.vue'
 
 const vFocus = { mounted: (el) => el.focus() }
 
 const meta = inject('meta')
 const { setValue, deleteNode, addChild } = useLayoutEditor(meta)
 
-const mainPanel = computed(() => meta?.value?.layout?.viz?.['main-panel'] ?? null)
+const mainPanel    = computed(() => meta?.value?.layout?.viz?.['main-panel'] ?? null)
+const adaptLibrary = computed(() => meta?.value?.layout?.adaptLibrary ?? {})
+const adaptChartTypes = computed(() =>
+  Object.entries(adaptLibrary.value).map(([v, def]) => ({ v, l: def.label || v }))
+)
 
 const tabList = computed(() => {
   if (!mainPanel.value) return []
@@ -106,8 +224,9 @@ const tabList = computed(() => {
     .map(k => ({ key: k, title: mainPanel.value[k]?.title ?? k }))
 })
 
-// ── Active tab (index-based for BTabs) ───────────────────────────────────────
+// ── Active tab ────────────────────────────────────────────────────────────────
 const activeTabIndex = ref(0)
+const activeTabKey   = computed(() => tabList.value[activeTabIndex.value]?.key ?? null)
 
 watch(tabList, (list) => {
   if (activeTabIndex.value >= list.length) {
@@ -138,7 +257,6 @@ function cancelEdit() { editingTab.value = null }
 function deleteTab(key) {
   const label = mainPanel.value?.[key]?.title ?? key
   if (!confirm(`Delete tab "${label}"?`)) return
-
   const arr  = mainPanel.value?.['tab-array'] ?? []
   const idx  = arr.indexOf(key)
   if (idx >= 0) deleteNode(['viz', 'main-panel', 'tab-array', idx])
@@ -146,12 +264,171 @@ function deleteTab(key) {
   const tIdx = tabs.indexOf(key)
   if (tIdx >= 0) deleteNode(['viz', 'main-panel', 'tabs', tIdx])
   deleteNode(['viz', 'main-panel', key])
-
   nextTick(() => {
     if (activeTabIndex.value >= tabList.value.length) {
       activeTabIndex.value = Math.max(0, tabList.value.length - 1)
     }
   })
+}
+
+// ── Grid state (resets when active tab changes) ───────────────────────────────
+const CHART_TYPES = [
+  { v: 'BarChart',         l: 'Bar Chart' },
+  { v: 'LineChart',        l: 'Line Chart' },
+  { v: 'StackedBarChart',  l: 'Stacked Bar' },
+  { v: 'StackedAreaChart', l: 'Stacked Area' },
+  { v: 'PieChart',         l: 'Pie Chart' },
+  { v: 'DonutChart',       l: 'Donut Chart' },
+  { v: 'ScatterplotChart', l: 'Scatterplot' },
+  { v: 'TreemapChart',     l: 'Treemap' },
+  { v: 'DataTable',        l: 'Data Table' },
+]
+
+function parseGridRows(tab) {
+  if (!tab?.contents) return [{ size: 100, cells: [{ chart: 'BarChart', size: 100 }] }]
+  const gc = tab.contents.find(c => c.component === 'GridContainer')
+  if (!gc) return [{ size: 100, cells: [{ chart: 'BarChart', size: 100 }] }]
+  const rows     = gc.layouts?.[0]?.rows ?? []
+  const contents = gc.contents ?? []
+  if (!rows.length) return [{ size: 100, cells: [{ chart: 'BarChart', size: 100 }] }]
+  return rows.map((row, ri) => ({
+    size: Number(row.size) || Math.floor(100 / rows.length),
+    cells: (row.cells ?? []).map((cell, ci) => {
+      const stored = contents.find(c => c.cell === `dashboard-cell-${ri + 1}-${ci + 1}`)
+      return {
+        chart: stored?.component ?? 'BarChart',
+        size:  Number(cell.size) || Math.floor(100 / (row.cells?.length || 1)),
+      }
+    }),
+  }))
+}
+
+const gridRows = ref([])
+
+watch(activeTabKey, (key) => {
+  gridRows.value = parseGridRows(mainPanel.value?.[key] ?? null)
+}, { immediate: true })
+
+function cellId(ri, ci) { return `dashboard-cell-${ri + 1}-${ci + 1}` }
+
+function equalSizes(n) {
+  const base = Math.floor(100 / n)
+  return Array.from({ length: n }, (_, i) => (i < n - 1 ? base : 100 - base * (n - 1)))
+}
+
+function addRow() {
+  const sizes = equalSizes(gridRows.value.length + 1)
+  gridRows.value.forEach((r, i) => { r.size = sizes[i] })
+  gridRows.value.push({ size: sizes[sizes.length - 1], cells: [{ chart: 'BarChart', size: 100 }] })
+}
+
+function removeRow(ri) {
+  gridRows.value.splice(ri, 1)
+  equalSizes(gridRows.value.length).forEach((s, i) => { gridRows.value[i].size = s })
+}
+
+function addCell(ri) {
+  const cells = gridRows.value[ri].cells
+  const sizes = equalSizes(cells.length + 1)
+  cells.forEach((c, i) => { c.size = sizes[i] })
+  cells.push({ chart: 'DataTable', size: sizes[sizes.length - 1] })
+}
+
+function removeCell(ri, ci) {
+  const cells = gridRows.value[ri].cells
+  cells.splice(ci, 1)
+  equalSizes(cells.length).forEach((s, i) => { cells[i].size = s })
+}
+
+function clampRowSizes() {
+  gridRows.value.forEach(r => { r.size = Math.max(5, Math.min(95, r.size || 5)) })
+}
+
+function clampCellSizes(ri) {
+  gridRows.value[ri].cells.forEach(c => { c.size = Math.max(5, Math.min(95, c.size || 5)) })
+}
+
+// ── Cell configuration ────────────────────────────────────────────────────────
+function getGcIndex() {
+  const tab = mainPanel.value?.[activeTabKey.value]
+  return (tab?.contents ?? []).findIndex(c => c.component === 'GridContainer')
+}
+
+const storedCells = computed(() => {
+  const key = activeTabKey.value
+  if (!key) return []
+  const gcIdx = getGcIndex()
+  if (gcIdx < 0) return []
+  return mainPanel.value?.[key]?.contents?.[gcIdx]?.contents ?? []
+})
+
+const storedDatasources = computed(() => {
+  const key = activeTabKey.value
+  if (!key) return []
+  return (mainPanel.value?.[key]?.datasources ?? []).map(ds => ds.name).filter(n => n && n !== '/')
+})
+
+function setCellField(cellIndex, fieldKey, value) {
+  const key   = activeTabKey.value
+  const gcIdx = getGcIndex()
+  if (!key || gcIdx < 0) return
+  setValue(['viz', 'main-panel', key, 'contents', gcIdx, 'contents', cellIndex, fieldKey], value)
+}
+
+// ── Build & save ──────────────────────────────────────────────────────────────
+const FIELD_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
+
+function buildTabConfig() {
+  const key  = activeTabKey.value
+  const base = mainPanel.value?.[key] ?? {}
+  const title = base.title ?? key
+
+  const layoutRows = gridRows.value.map((row, ri) => ({
+    size: String(row.size),
+    cells: row.cells.map((cell, ci) => {
+      const obj = { id: cellId(ri, ci) }
+      if (row.cells.length > 1) obj.size = String(cell.size)
+      return obj
+    }),
+  }))
+
+  const existingGc    = base.contents?.find(c => c.component === 'GridContainer')
+  const existingCells = existingGc?.contents ?? []
+
+  const contents = []
+  gridRows.value.forEach((row, ri) => {
+    row.cells.forEach((cell, ci) => {
+      const id         = cellId(ri, ci)
+      const prev       = existingCells.find(c => c.cell === id)
+      const cellConfig = { ...(prev ?? {}), cell: id, component: cell.chart }
+      const adaptDef   = adaptLibrary.value[cell.chart]
+      if (adaptDef) {
+        for (const field of adaptDef.fields ?? []) {
+          if (!(field.key in cellConfig)) {
+            cellConfig[field.key] = field.default !== undefined ? field.default : (FIELD_DEFAULTS[field.type] ?? '')
+          }
+        }
+      }
+      if (!('datasourceName' in cellConfig)) cellConfig.datasourceName = '/'
+      contents.push(cellConfig)
+    })
+  })
+
+  return {
+    ...base,
+    title,
+    component: 'TabWrapper',
+    contents: [{ layouts: [{ id: 'layout-1', rows: layoutRows }], contents, component: 'GridContainer' }],
+    datasources: base.datasources ?? [{ name: '/', component: 'Datasource', 'dql-metrics': [], 'flat-table-target': '' }],
+    'right-panel':     base['right-panel']     ?? { 'tab-array': [], defaultTab: null },
+    'generate-report': base['generate-report'] ?? [],
+  }
+}
+
+function saveTab() {
+  const key = activeTabKey.value
+  if (!key) return
+  setValue(['viz', 'main-panel', key], buildTabConfig())
 }
 
 // ── New tab ───────────────────────────────────────────────────────────────────
@@ -285,7 +562,7 @@ function resetForm() {
   border-bottom-color: #4f46e5;
 }
 
-/* ── Tab title slot content ── */
+/* ── Tab title slot ── */
 .tab-title-input {
   border: 1px solid #c4b5fd;
   border-radius: 4px;
@@ -309,7 +586,6 @@ function resetForm() {
 }
 .tab-close:hover { color: #dc2626; background: #fee2e2; }
 
-/* ── Add tab button ── */
 .add-tab-btn {
   background: none;
   border: none;
@@ -321,4 +597,81 @@ function resetForm() {
   white-space: nowrap;
 }
 .add-tab-btn:hover { color: #4f46e5; background: #f5f3ff; }
+
+/* ── Tab body ── */
+.content-body { padding: 20px 28px 32px; }
+
+/* ── Grid preview ── */
+.grid-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  height: 200px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f8f9fb;
+}
+.preview-row { display: flex; gap: 3px; padding: 3px; min-height: 0; }
+.preview-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid #c7d2fe;
+  border-radius: 4px;
+  padding: 6px 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+.cell-id-label {
+  font-size: 9px;
+  font-family: monospace;
+  color: #6366f1;
+  background: #eff6ff;
+  padding: 1px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  align-self: flex-start;
+}
+.cell-chart-select { border: 1px solid #e5e7eb; border-radius: 4px; font-size: 11px; padding: 2px 4px; background: #fff; flex: 1; min-width: 0; cursor: pointer; }
+.cell-chart-select:focus { border-color: #6366f1; outline: none; }
+.cell-footer { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.cell-remove { background: none; color: #d1d5db; font-size: 14px; line-height: 1; padding: 0 2px; }
+.cell-remove:hover { color: #dc2626; }
+
+.row-controls { display: flex; flex-direction: column; gap: 4px; }
+.row-control { display: flex; align-items: center; gap: 8px; font-size: 12px; background: #f9fafb; border: 1px solid #f0f0f0; border-radius: 6px; padding: 6px 10px; }
+.row-control-label { color: #6b7280; width: 46px; flex-shrink: 0; font-size: 11px; }
+.size-label { display: flex; align-items: center; gap: 3px; font-size: 11px; color: #6b7280; }
+.size-input { width: 44px; border: 1px solid #e5e7eb; border-radius: 4px; padding: 2px 4px; font-size: 11px; text-align: center; }
+.size-input:focus { border-color: #6366f1; outline: none; }
+.row-action-btn { font-size: 11px; padding: 3px 9px; border-radius: 5px; background: #f3f4f6; color: #374151; }
+.row-action-btn:hover:not(:disabled) { background: #e5e7eb; }
+.row-action-btn:disabled { opacity: 0.35; cursor: default; }
+.row-action-btn--danger:hover:not(:disabled) { background: #fee2e2; color: #dc2626; }
+.add-row-btn { align-self: flex-start; background: none; border: 1px dashed #c4b5fd; color: #7c3aed; padding: 5px 14px; border-radius: 6px; font-size: 12px; }
+.add-row-btn:hover:not(:disabled) { background: #f5f3ff; }
+.add-row-btn:disabled { opacity: 0.35; cursor: default; }
+
+/* ── Cell config ── */
+.cell-config { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; }
+.cell-config + .cell-config { margin-top: 8px; }
+.cell-config-header { display: flex; align-items: center; gap: 8px; padding: 7px 12px; background: #f3f4f6; border-bottom: 1px solid #e5e7eb; }
+.cell-id-tag { font-size: 10px; font-family: monospace; color: #6366f1; background: #eff6ff; padding: 1px 6px; border-radius: 3px; }
+.cell-type-tag { font-size: 11px; font-weight: 600; color: #374151; }
+.cell-fields { display: flex; flex-direction: column; background: #fff; }
+.cell-field-row { display: grid; grid-template-columns: 170px 1fr; align-items: center; gap: 8px; padding: 6px 12px; border-top: 1px solid #f0f0f0; }
+.cell-field-label { font-size: 11px; font-family: monospace; color: #6b7280; }
+.cell-field-input { border: 1px solid #e5e7eb; border-radius: 4px; padding: 4px 8px; font-size: 12px; background: #fff; max-width: 260px; }
+.cell-field-input:focus { border-color: #6366f1; outline: none; }
+.cell-field-select { border: 1px solid #e5e7eb; border-radius: 4px; padding: 4px 8px; font-size: 12px; background: #fff; max-width: 260px; }
+.cell-field-select:focus { border-color: #6366f1; outline: none; }
+.cell-field-check { width: 14px; height: 14px; cursor: pointer; accent-color: #4f46e5; }
+.cell-no-def { font-size: 11px; color: #9ca3af; padding: 10px 12px; font-style: italic; }
+
+.save-bar { padding-top: 4px; }
 </style>
