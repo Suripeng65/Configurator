@@ -1,11 +1,23 @@
 <script setup lang="ts">
-import {inject } from 'vue'
-import {BFormGroup, BFormInput} from "bootstrap-vue-next";
-import HistoryFormGroup from "@src/components/HistoryFormGroup.vue";
-import IdentifierFormGroup from "@src/components/IdentifierFormGroup.vue";
-import UserEditor from "@src/views/UserEditor.vue";
+import { inject, watch } from 'vue'
+import UserEditor from "@src/views/UserEditor.vue"
+import { useTemplateStore } from '@src/stores/template'
 
-const meta = inject('meta')
+const meta  = inject<any>('meta')
+const store = useTemplateStore()
+
+// Bridge: when useEditorWorkflow populates meta with the fetched template,
+// sync it into the Pinia store so MainTabsPanel/WorkspacePanel/AdaptLibraryPanel
+// can read it reactively.
+watch(
+  () => meta?.value,
+  (val) => {
+    if (val?.layout && Object.keys(val.layout).length > 0) {
+      store.template = val
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
