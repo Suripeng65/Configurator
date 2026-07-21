@@ -132,19 +132,20 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, inject } from 'vue'
 import { BForm, BFormGroup, BFormInput, BButton } from 'bootstrap-vue-next'
-import { useTemplateStore } from '@src/stores/template'
+import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
 
 const props = defineProps({
   tabKey: { type: String, default: null },
 })
 const emit = defineEmits(['saved', 'cancelled', 'deleted'])
 
-const store = useTemplateStore()
+const meta = inject('meta')
+const { setValue, deleteNode, addChild } = useLayoutEditor(meta)
 
-const mainPanel     = computed(() => store.template?.layout?.viz?.['main-panel'] ?? null)
-const adaptLibrary  = computed(() => store.template?.layout?.adaptLibrary ?? {})
+const mainPanel     = computed(() => meta?.value?.layout?.viz?.['main-panel'] ?? null)
+const adaptLibrary  = computed(() => meta?.value?.layout?.adaptLibrary ?? {})
 const adaptChartTypes = computed(() =>
   Object.entries(adaptLibrary.value).map(([v, def]) => ({ v, l: def.label || v }))
 )
@@ -208,7 +209,7 @@ const storedDatasources = computed(() =>
 function setCellField(cellIndex, fieldKey, value) {
   const gcIdx = getGcIndex()
   if (gcIdx < 0) return
-  store.setValue(['viz', 'main-panel', props.tabKey, 'contents', gcIdx, 'contents', cellIndex, fieldKey], value)
+  setValue(['viz', 'main-panel', props.tabKey, 'contents', gcIdx, 'contents', cellIndex, fieldKey], value)
 }
 
 // ── Grid builder helpers ──────────────────────────────────────────────────────
@@ -312,7 +313,7 @@ function save() {
   const tabConfig = buildTabConfig(title)
 
   if (isEdit.value) {
-    store.setValue(['viz', 'main-panel', props.tabKey], tabConfig)
+    setValue(['viz', 'main-panel', props.tabKey], tabConfig)
     emit('saved', props.tabKey)
   } else {
     const key = formKey.value.trim().replace(/\s+/g, '_')
@@ -321,12 +322,12 @@ function save() {
 
     const tabArrayLen = mainPanel.value['tab-array']?.length ?? 0
     const tabsLen     = mainPanel.value['tabs']?.length ?? 0
-    store.addChild(['viz', 'main-panel'], key, 'object')
-    store.setValue(['viz', 'main-panel', key], tabConfig)
-    store.addChild(['viz', 'main-panel', 'tab-array'], null, 'string')
-    store.setValue(['viz', 'main-panel', 'tab-array', tabArrayLen], key)
-    store.addChild(['viz', 'main-panel', 'tabs'], null, 'string')
-    store.setValue(['viz', 'main-panel', 'tabs', tabsLen], key)
+    addChild(['viz', 'main-panel'], key, 'object')
+    setValue(['viz', 'main-panel', key], tabConfig)
+    addChild(['viz', 'main-panel', 'tab-array'], null, 'string')
+    setValue(['viz', 'main-panel', 'tab-array', tabArrayLen], key)
+    addChild(['viz', 'main-panel', 'tabs'], null, 'string')
+    setValue(['viz', 'main-panel', 'tabs', tabsLen], key)
     emit('saved', key)
   }
 }
@@ -335,10 +336,10 @@ function deleteTab() {
   if (!confirm(`Delete tab "${props.tabKey}"?`)) return
   const tabArray = mainPanel.value?.['tab-array'] ?? []
   const idx = tabArray.indexOf(props.tabKey)
-  if (idx >= 0) store.deleteNode(['viz', 'main-panel', 'tab-array', idx])
+  if (idx >= 0) deleteNode(['viz', 'main-panel', 'tab-array', idx])
   const tabs = mainPanel.value?.['tabs'] ?? []
   const tabsIdx = tabs.indexOf(props.tabKey)
-  if (tabsIdx >= 0) store.deleteNode(['viz', 'main-panel', 'tabs', tabsIdx])
+  if (tabsIdx >= 0) deleteNode(['viz', 'main-panel', 'tabs', tabsIdx])
   emit('deleted', props.tabKey)
 }
 </script>

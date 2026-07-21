@@ -166,12 +166,13 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { useTemplateStore } from '@src/stores/template'
+import { ref, computed, watch, onMounted, inject } from 'vue'
 import { BModal, BFormInput } from 'bootstrap-vue-next'
 import { ADAPT_COMPONENTS } from '../AdaptComponents/index.js'
+import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
 
-const store = useTemplateStore()
+const meta = inject('meta')
+const { setValue, deleteNode } = useLayoutEditor(meta)
 
 const selected = ref(null)
 const showAdd  = ref(false)
@@ -181,7 +182,7 @@ const addError = ref('')
 
 // ── Computed ──────────────────────────────────────────────────────────────────
 
-const adaptLibrary   = computed(() => store.template?.layout?.adaptLibrary ?? {})
+const adaptLibrary   = computed(() => meta?.value?.layout?.adaptLibrary ?? {})
 const componentNames = computed(() => Object.keys(adaptLibrary.value))
 const currentDef     = computed(() => selected.value ? adaptLibrary.value[selected.value] ?? null : null)
 
@@ -190,7 +191,7 @@ const hasDatasourceField = computed(() =>
 )
 
 const availableDatasources = computed(() => {
-  const mainPanel = store.template?.layout?.viz?.['main-panel'] ?? {}
+  const mainPanel = meta?.value?.layout?.viz?.['main-panel'] ?? {}
   const tabArray  = mainPanel['tab-array'] ?? []
   const names = new Set()
   for (const tabKey of tabArray) {
@@ -205,19 +206,19 @@ const availableDatasources = computed(() => {
 })
 
 // Seed defaults when template loads
-onMounted(() => { if (store.template?.layout) seedBuiltins() })
-watch(() => store.template?.layout, (layout) => { if (layout) seedBuiltins() })
+onMounted(() => { if (meta?.value?.layout) seedBuiltins() })
+watch(() => meta?.value?.layout, (layout) => { if (layout) seedBuiltins() })
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 
 function seedBuiltins() {
-  if (!store.template?.layout) return
-  if (!store.template.layout.adaptLibrary) {
-    store.setValue(['adaptLibrary'], {})
+  if (!meta?.value?.layout) return
+  if (!meta.value.layout.adaptLibrary) {
+    setValue(['adaptLibrary'], {})
   }
   for (const [name, def] of Object.entries(ADAPT_COMPONENTS)) {
     if (!adaptLibrary.value[name]) {
-      store.setValue(['adaptLibrary', name], {
+      setValue(['adaptLibrary', name], {
         label: def.label,
         fields: def.fields.map(f => ({ ...f })),
       })
@@ -240,22 +241,22 @@ function confirmAdd() {
   if (/\s/.test(name))          { addError.value = 'Name cannot contain spaces.'; return }
   if (adaptLibrary.value[name]) { addError.value = `"${name}" already exists.`; return }
 
-  if (!store.template?.layout?.adaptLibrary) {
-    store.setValue(['adaptLibrary'], {})
+  if (!meta?.value?.layout?.adaptLibrary) {
+    setValue(['adaptLibrary'], {})
   }
-  store.setValue(['adaptLibrary', name], { label, fields: [] })
+  setValue(['adaptLibrary', name], { label, fields: [] })
   selected.value = name
   showAdd.value  = false
 }
 
 function setLabel(label) {
-  store.setValue(['adaptLibrary', selected.value, 'label'], label)
+  setValue(['adaptLibrary', selected.value, 'label'], label)
 }
 
 const TYPE_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
 
 function propagateFieldToUsages(componentName, field) {
-  const mainPanel = store.template?.layout?.viz?.['main-panel'] ?? {}
+  const mainPanel = meta?.value?.layout?.viz?.['main-panel'] ?? {}
   const tabArray = mainPanel['tab-array'] ?? []
   for (const tabKey of tabArray) {
     const tab = mainPanel[tabKey]
@@ -268,7 +269,7 @@ function propagateFieldToUsages(componentName, field) {
       if (cell.component !== componentName) continue
       if (cell[field.key] !== undefined) continue
       const defaultVal = field.default !== undefined ? field.default : (TYPE_DEFAULTS[field.type] ?? '')
-      store.setValue(['viz', 'main-panel', tabKey, 'contents', gcIndex, 'contents', ci, field.key], defaultVal)
+      setValue(['viz', 'main-panel', tabKey, 'contents', gcIndex, 'contents', ci, field.key], defaultVal)
     }
   }
 }
@@ -277,7 +278,7 @@ function addField() {
   const fields = [...(currentDef.value.fields ?? [])]
   const newField = { key: `field${fields.length + 1}`, type: 'string' }
   fields.push(newField)
-  store.setValue(['adaptLibrary', selected.value, 'fields'], fields)
+  setValue(['adaptLibrary', selected.value, 'fields'], fields)
   propagateFieldToUsages(selected.value, newField)
 }
 
@@ -285,17 +286,17 @@ function setFieldProp(i, prop, value) {
   const fields = (currentDef.value.fields ?? []).map((f, idx) =>
     idx === i ? { ...f, [prop]: value } : f
   )
-  store.setValue(['adaptLibrary', selected.value, 'fields'], fields)
+  setValue(['adaptLibrary', selected.value, 'fields'], fields)
 }
 
 function removeField(i) {
   const fields = (currentDef.value.fields ?? []).filter((_, idx) => idx !== i)
-  store.setValue(['adaptLibrary', selected.value, 'fields'], fields)
+  setValue(['adaptLibrary', selected.value, 'fields'], fields)
 }
 
 function deleteComponent() {
   if (!confirm(`Delete component "${selected.value}"?`)) return
-  store.deleteNode(['adaptLibrary', selected.value])
+  deleteNode(['adaptLibrary', selected.value])
   selected.value = null
 }
 </script>

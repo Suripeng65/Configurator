@@ -74,8 +74,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useTemplateStore } from '@src/stores/template'
+import { ref, computed, inject } from 'vue'
+import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
 import TabForm from './TabForm.vue'
 
 const MAIN_PANEL_META_KEYS = new Set(['tab-array', 'tabs', 'defaultTab', 'datasources', 'component'])
@@ -87,12 +87,13 @@ const CHART_LABELS = {
   DataTable: 'Data Table',
 }
 
-const store = useTemplateStore()
+const meta = inject('meta')
+const { setValue, deleteNode, addChild, moveItem } = useLayoutEditor(meta)
 
 const selectedTab = ref(null)
 
-const adaptLibrary = computed(() => store.template?.layout?.adaptLibrary ?? {})
-const mainPanel    = computed(() => store.template?.layout?.viz?.['main-panel'] ?? null)
+const adaptLibrary = computed(() => meta?.value?.layout?.adaptLibrary ?? {})
+const mainPanel    = computed(() => meta?.value?.layout?.viz?.['main-panel'] ?? null)
 
 const tabList = computed(() => {
   if (!mainPanel.value) return []
@@ -135,21 +136,21 @@ function chartTypeLabel(tabKey) {
 }
 
 function setDefault(tabKey) {
-  store.setValue(['viz', 'main-panel', 'defaultTab'], tabKey)
+  setValue(['viz', 'main-panel', 'defaultTab'], tabKey)
 }
 
 function moveTab(fromIndex, toIndex) {
-  store.moveItem(['viz', 'main-panel', 'tab-array'], fromIndex, toIndex)
-  store.moveItem(['viz', 'main-panel', 'tabs'], fromIndex, toIndex)
+  moveItem(['viz', 'main-panel', 'tab-array'], fromIndex, toIndex)
+  moveItem(['viz', 'main-panel', 'tabs'], fromIndex, toIndex)
 }
 
 function registerTab(key) {
   const tabArrayLen = mainPanel.value['tab-array']?.length ?? 0
   const tabsLen     = mainPanel.value['tabs']?.length ?? 0
-  store.addChild(['viz', 'main-panel', 'tab-array'], null, 'string')
-  store.setValue(['viz', 'main-panel', 'tab-array', tabArrayLen], key)
-  store.addChild(['viz', 'main-panel', 'tabs'], null, 'string')
-  store.setValue(['viz', 'main-panel', 'tabs', tabsLen], key)
+  addChild(['viz', 'main-panel', 'tab-array'], null, 'string')
+  setValue(['viz', 'main-panel', 'tab-array', tabArrayLen], key)
+  addChild(['viz', 'main-panel', 'tabs'], null, 'string')
+  setValue(['viz', 'main-panel', 'tabs', tabsLen], key)
 }
 
 function onSaved() { selectedTab.value = null }

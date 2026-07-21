@@ -51,7 +51,7 @@
 
     <!-- Editor body -->
     <div v-else class="editor-body">
-      <UserEditor v-if="mode === 'user'" />
+      <LayoutEditor v-if="mode === 'user'" />
 
       <template v-else>
         <div
@@ -109,7 +109,7 @@ import { storeToRefs } from 'pinia'
 import { useTemplateStore } from '@src/stores/template'
 import TreeNode from '@src/components/TreeNode.vue'
 import JsonPreview from '@src/components/JsonPreview.vue'
-import UserEditor from '@src/views/UserEditor.vue'
+import LayoutEditor from '@src/views/LayoutEditor.vue'
 import TemplateSelector from '@src/components/TemplateSelector.vue'
 
 const store = useTemplateStore()

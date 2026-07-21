@@ -63,19 +63,20 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useTemplateStore } from '@src/stores/template'
+import { ref, computed, inject } from 'vue'
+import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
 import WorkspaceSection from './WorkspaceSection.vue'
 
 const LEAVES = ['FlexDropdown', 'ModalSelector', 'ValidationMessage', 'StratificationToggle', 'StratificationDropdown']
 const NEEDS_DIM_TYPES = ['FlexDropdown', 'ModalSelector', 'StratificationToggle', 'StratificationDropdown']
 
-const store = useTemplateStore()
+const meta = inject('meta')
+const { setValue, addChild } = useLayoutEditor(meta)
 
-const adaptLibrary    = computed(() => store.template?.layout?.adaptLibrary ?? {})
+const adaptLibrary    = computed(() => meta?.value?.layout?.adaptLibrary ?? {})
 const adaptComponents = computed(() => Object.entries(adaptLibrary.value).map(([k, d]) => ({ key: k, label: d.label || k, fields: d.fields ?? [] })))
 
-const layout = computed(() => store.template?.layout ?? {})
+const layout = computed(() => meta?.value?.layout ?? {})
 const leftPanel = computed(() => layout.value?.viz?.['left-panel'] ?? {})
 const tabKey = computed(() => leftPanel.value?.tabs?.[0] ?? 'tab-one')
 const tabContent = computed(() => leftPanel.value[tabKey.value] ?? {})
@@ -137,8 +138,8 @@ function addSection() {
   // Ensure MonitorPanel exists; if monitorPanel is missing, abort
   if (monitorPanelIndex.value < 0) return
 
-  store.addChild(monitorContentsPath.value, null, 'object')
-  store.setValue([...monitorContentsPath.value, newIdx], config)
+  addChild(monitorContentsPath.value, null, 'object')
+  setValue([...monitorContentsPath.value, newIdx], config)
   cancelAdd()
 }
 

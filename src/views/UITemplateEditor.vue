@@ -25,7 +25,7 @@
 
       <!-- Layout / Dev Mode view -->
       <template v-if="section === 'layout'">
-        <UserEditor v-if="mode === 'user'" />
+        <LayoutEditor v-if="mode === 'user'" />
         <div v-else class="split-container" ref="splitContainer" :class="{ 'is-dragging': isDragging }">
           <div class="tree-pane" :style="{ width: treePaneWidth + '%' }">
             <div class="pane-title">Configuration Tree</div>
@@ -48,7 +48,7 @@
 
       <!-- Datasources view (user editor datasources panel) -->
       <template v-else-if="section === 'datasources'">
-        <UserEditor v-if="mode === 'user'" :initial-tab="'datasources'" />
+        <LayoutEditor v-if="mode === 'user'" :initial-tab="'datasources'" />
         <div v-else class="coming-soon">
           <p>Datasources panel — switch to User Mode to edit.</p>
         </div>
@@ -72,7 +72,7 @@ import { BButton } from 'bootstrap-vue-next'
 import { useTemplateStore } from '@/stores/template'
 import TreeNode from '@/components/TreeNode.vue'
 import JsonPreview from '@/components/JsonPreview.vue'
-import UserEditor from '@/views/UserEditor.vue'
+import LayoutEditor from '@/views/LayoutEditor.vue'
 
 const API = 'http://localhost:8000'
 const route = useRoute()

@@ -219,8 +219,8 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, defineComponent, h } from 'vue'
-import { useTemplateStore } from '@src/stores/template'
+import { ref, computed, nextTick, defineComponent, h, inject } from 'vue'
+import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
 
 // ── Known keys per component type (everything else → extra fields) ────────────
 const KNOWN_KEYS_BY_TYPE = {
@@ -321,7 +321,8 @@ const props = defineProps({
   depth: { type: Number, default: 0 },
 })
 
-const store = useTemplateStore()
+const meta = inject('meta')
+const { setValue, deleteNode, addChild } = useLayoutEditor(meta)
 
 const expanded    = ref(props.depth < 2)
 const editingName = ref(false)
@@ -377,8 +378,8 @@ const namePlaceholder = computed(() => {
 
 // All existing instances of the selected type anywhere in the layout
 const existingInstances = computed(() => {
-  if (!store.template?.layout) return []
-  return findComponentInstances(store.template.layout, newItemType.value)
+  if (!meta?.value?.layout) return []
+  return findComponentInstances(meta.value.layout, newItemType.value)
 })
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -389,19 +390,19 @@ function deleteNode() {
     ? `Remove "${label}" and all its children?`
     : `Remove "${label}"?`
   if (!confirm(msg)) return
-  store.deleteNode(props.path)
+  deleteNode(props.path)
 }
 
 function setField(key, value) {
   if (value === undefined) {
-    store.deleteNode([...props.path, key])
+    deleteNode([...props.path, key])
   } else {
-    store.setValue([...props.path, key], value)
+    setValue([...props.path, key], value)
   }
 }
 
 function setFieldJson(key, raw) {
-  try { store.setValue([...props.path, key], JSON.parse(raw)) } catch { /* ignore parse errors */ }
+  try { setValue([...props.path, key], JSON.parse(raw)) } catch { /* ignore parse errors */ }
 }
 
 function setOptions(text) {
@@ -460,8 +461,8 @@ function addItem() {
     config = buildNewItem(newItemType.value, newItemName.value, newItemDim.value)
   }
 
-  store.addChild(contentsPath, null, 'object')
-  store.setValue([...contentsPath, newIdx], config)
+  addChild(contentsPath, null, 'object')
+  setValue([...contentsPath, newIdx], config)
   expanded.value = true
   cancelAdd()
 }
