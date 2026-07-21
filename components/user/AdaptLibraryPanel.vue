@@ -252,10 +252,33 @@ function setLabel(label) {
   store.setValue(['adaptLibrary', selected.value, 'label'], label)
 }
 
+const TYPE_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
+
+function propagateFieldToUsages(componentName, field) {
+  const mainPanel = store.template?.layout?.viz?.['main-panel'] ?? {}
+  const tabArray = mainPanel['tab-array'] ?? []
+  for (const tabKey of tabArray) {
+    const tab = mainPanel[tabKey]
+    if (!tab?.contents) continue
+    const gcIndex = tab.contents.findIndex(c => c.component === 'GridContainer')
+    if (gcIndex < 0) continue
+    const cells = tab.contents[gcIndex].contents ?? []
+    for (let ci = 0; ci < cells.length; ci++) {
+      const cell = cells[ci]
+      if (cell.component !== componentName) continue
+      if (cell[field.key] !== undefined) continue
+      const defaultVal = field.default !== undefined ? field.default : (TYPE_DEFAULTS[field.type] ?? '')
+      store.setValue(['viz', 'main-panel', tabKey, 'contents', gcIndex, 'contents', ci, field.key], defaultVal)
+    }
+  }
+}
+
 function addField() {
   const fields = [...(currentDef.value.fields ?? [])]
-  fields.push({ key: `field${fields.length + 1}`, type: 'string' })
+  const newField = { key: `field${fields.length + 1}`, type: 'string' }
+  fields.push(newField)
   store.setValue(['adaptLibrary', selected.value, 'fields'], fields)
+  propagateFieldToUsages(selected.value, newField)
 }
 
 function setFieldProp(i, prop, value) {
