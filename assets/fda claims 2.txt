@@ -1,0 +1,1149 @@
+{
+  "layout": {
+    "viz": {
+      "left-panel": {
+        "tabs": [
+          "tab-one"
+        ],
+        "tab-one": {
+          "title": "Workspace",
+          "contents": [
+            {
+              "upload": {
+                "/dx": [
+                  {
+                    "columnName": "CODE",
+                    "displayName": "Diagnosis Code"
+                  }
+                ],
+                "/hcpcs": [
+                  {
+                    "columnName": "CODE",
+                    "displayName": "HCPCS Code"
+                  }
+                ]
+              },
+              "addTabs": true,
+              "contents": [
+                {
+                  "contents": [
+                    {
+                      "contents": [
+                        {
+                          "ruleName": "codes-required",
+                          "component": "ValidationMessage"
+                        },
+                        {
+                          "dim": "DX_CODE",
+                          "label": "Diagnosis (sub)",
+                          "contents": [
+                            {
+                              "toolbar": true,
+                              "contents": [
+                                {
+                                  "field": "archive",
+                                  "value": null,
+                                  "component": "TransformButton",
+                                  "description": "Are you sure you want to Archive?",
+                                  "displayName": "Archive",
+                                  "datasourceName": "/dx",
+                                  "targetDatasource": "/transform"
+                                }
+                              ],
+                              "component": "TreeTable",
+                              "quick-filter": [
+                                "CODE",
+                                "DESCRIPTION"
+                              ],
+                              "datasourceName": "/dx"
+                            }
+                          ],
+                          "component": "ModalSelector"
+                        },
+                        {
+                          "dim": "ICD9_PRCDR_CDS",
+                          "label": null,
+                          "contents": [
+                            {
+                              "toolbar": false,
+                              "component": "DataTable",
+                              "quick-filter": [
+                                "CODE",
+                                "DESCRIPTION"
+                              ],
+                              "datasourceName": "/sg"
+                            }
+                          ],
+                          "component": "ModalSelector"
+                        },
+                        {
+                          "dim": "HCPCS_CODE",
+                          "hide": "!(has(monitor,\"DX_CODE\")) && activeTab != \"sample_1ab_scatter\"",
+                          "label": "HCPCS (sub)",
+                          "contents": [
+                            {
+                              "toolbar": false,
+                              "component": "DataTable",
+                              "quick-filter": [
+                                "CODE",
+                                "DESCRIPTION"
+                              ],
+                              "datasourceName": "/hcpcs"
+                            }
+                          ],
+                          "component": "ModalSelector"
+                        }
+                      ],
+                      "collapsed": true,
+                      "component": "LayoutSection",
+                      "collapsible": true,
+                      "displayName": "Codes"
+                    },
+                    {
+                      "contents": [
+                        {
+                          "ruleName": "start-end-precede",
+                          "component": "ValidationMessage"
+                        },
+                        {
+                          "dim": "start_dt",
+                          "label": "Start Date",
+                          "options": [
+                            "2008-01",
+                            "2008-02",
+                            "2008-03",
+                            "2008-04",
+                            "2008-05",
+                            "2008-06",
+                            "2008-07",
+                            "2008-08",
+                            "2008-09",
+                            "2008-10",
+                            "2008-11",
+                            "2008-12",
+                            "2009-01",
+                            "2009-02",
+                            "2009-03",
+                            "2009-04",
+                            "2009-05",
+                            "2009-06",
+                            "2009-07",
+                            "2009-08",
+                            "2009-09",
+                            "2009-10",
+                            "2009-11",
+                            "2009-12",
+                            "2010-01",
+                            "2010-02",
+                            "2010-03",
+                            "2010-04",
+                            "2010-05",
+                            "2010-06",
+                            "2010-07",
+                            "2010-08",
+                            "2010-09",
+                            "2010-10",
+                            "2010-11",
+                            "2010-12",
+                            "2011-01"
+                          ],
+                          "ruleName": "start-dt-required",
+                          "component": "FlexDropdown"
+                        },
+                        {
+                          "dim": "end_dt",
+                          "label": "End Date",
+                          "options": [
+                            "2008-01",
+                            "2008-02",
+                            "2008-03",
+                            "2008-04",
+                            "2008-05",
+                            "2008-06",
+                            "2008-07",
+                            "2008-08",
+                            "2008-09",
+                            "2008-10",
+                            "2008-11",
+                            "2008-12",
+                            "2009-01",
+                            "2009-02",
+                            "2009-03",
+                            "2009-04",
+                            "2009-05",
+                            "2009-06",
+                            "2009-07",
+                            "2009-08",
+                            "2009-09",
+                            "2009-10",
+                            "2009-11",
+                            "2009-12",
+                            "2010-01",
+                            "2010-02",
+                            "2010-03",
+                            "2010-04",
+                            "2010-05",
+                            "2010-06",
+                            "2010-07",
+                            "2010-08",
+                            "2010-09",
+                            "2010-10",
+                            "2010-11",
+                            "2010-12",
+                            "2011-01"
+                          ],
+                          "ruleName": "end-date-required",
+                          "component": "FlexDropdown"
+                        }
+                      ],
+                      "collapsed": true,
+                      "component": "LayoutSection",
+                      "collapsible": true,
+                      "displayName": "Dates"
+                    }
+                  ],
+                  "collapsed": false,
+                  "component": "LayoutSection",
+                  "collapsible": false,
+                  "displayName": "Medical Codes"
+                },
+                {
+                  "contents": [
+                    {
+                      "ruleName": "stratification-required",
+                      "component": "ValidationMessage"
+                    },
+                    {
+                      "dim": "stratification",
+                      "contents": [
+                        {
+                          "contents": [
+                            {
+                              "dim": "DESYNPUF_ID",
+                              "hide": "!monitor.end_dt",
+                              "component": "StratificationToggle",
+                              "datasourceName": "/"
+                            },
+                            {
+                              "dim": "stratification",
+                              "hide": "!monitor.start_dt",
+                              "options": [
+                                "ADMIT_YEAR",
+                                "ADMIT_QUARTER",
+                                "ADMIT_MONTH"
+                              ],
+                              "component": "StratificationDropdown",
+                              "displayName": "Select Time"
+                            },
+                            {
+                              "dim": "bracket_year",
+                              "hide": "!monitor.start_dt",
+                              "contents": [
+                                {
+                                  "dim": "ADMIT_YEAR",
+                                  "values": [
+                                    [
+                                      "2008",
+                                      "2009"
+                                    ]
+                                  ],
+                                  "component": "BracketList",
+                                  "displayName": "Default 1",
+                                  "datasourceName": "/"
+                                },
+                                {
+                                  "dim": "ADMIT_YEAR",
+                                  "values": [
+                                    [
+                                      "2009",
+                                      "2010"
+                                    ]
+                                  ],
+                                  "component": "BracketList",
+                                  "displayName": "Default 2",
+                                  "datasourceName": "/"
+                                },
+                                {
+                                  "dim": "ADMIT_YEAR",
+                                  "component": "BracketList",
+                                  "displayName": "Custom",
+                                  "datasourceName": "/"
+                                }
+                              ],
+                              "component": "StratificationModalBracketSelector",
+                              "displayName": "Year Brackets",
+                              "datasourceName": "/"
+                            }
+                          ],
+                          "component": "AccordionGroup",
+                          "groupName": "G1",
+                          "displayName": "Stratify By",
+                          "collapsedByDefault": true
+                        },
+                        {
+                          "contents": [
+                            {
+                              "dim": "CLM_FROM_DT",
+                              "component": "StratificationToggle",
+                              "datasourceName": "/"
+                            },
+                            {
+                              "dim": "CLM_THRU_DT",
+                              "hide": "!(has(monitor, \"HCPCS_CODE\") && includes(monitor.HCPCS_CODE,\"   A1\"))",
+                              "component": "StratificationToggle",
+                              "datasourceName": "/"
+                            }
+                          ],
+                          "component": "AccordionGroup",
+                          "groupName": "G2",
+                          "displayName": "Stratify By Date",
+                          "collapsedByDefault": false
+                        }
+                      ],
+                      "component": "AggregationAccordion",
+                      "datasourceName": "/"
+                    }
+                  ],
+                  "collapsed": false,
+                  "component": "LayoutSection",
+                  "collapsible": false,
+                  "displayName": "Drug Utilization Summaries"
+                }
+              ],
+              "max-tabs": 6,
+              "component": "MonitorPanel"
+            }
+          ]
+        },
+        "component": "LeftTabPanel"
+      },
+      "main-panel": {
+        "tabs": [
+          "sample_1ab_pie_bar",
+          "sample_1ab_series",
+          "sample_1ab_scatter",
+          "sample_1ab_tree",
+          "sample_1ab_stacked_bar",
+          "sample_1ab_donut"
+        ],
+        "component": "visualization",
+        "tab-array": [
+          "sample_1ab_pie_bar",
+          "sample_1ab_series",
+          "sample_1ab_scatter",
+          "sample_1ab_tree",
+          "sample_1ab_stacked_bar",
+          "sample_1ab_donut"
+        ],
+        "defaultTab": "sample_1ab_pie_bar",
+        "datasources": [
+          {
+            "name": "/dx",
+            "auto-load": true,
+            "component": "Datasource",
+            "on-select-item": {
+              "monitor": {
+                "CODE": "DX_CODE"
+              }
+            },
+            "detach-from-root": true,
+            "flat-table-target": "icd9_dgn_parent",
+            "select-multiple-items": 10
+          },
+          {
+            "name": "/hcpcs",
+            "auto-load": true,
+            "component": "Datasource",
+            "on-select-item": {
+              "monitor": {
+                "CODE": "HCPCS_CODE"
+              }
+            },
+            "detach-from-root": true,
+            "flat-table-target": "hcpcs",
+            "select-multiple-items": 30000
+          },
+          {
+            "name": "/sg",
+            "auto-load": true,
+            "component": "Datasource",
+            "on-select-item": {
+              "monitor": {
+                "CODE": "ICD9_PRCDR_CDS"
+              }
+            },
+            "detach-from-root": true,
+            "flat-table-target": "desc_long_sg",
+            "select-multiple-items": 1000
+          }
+        ],
+        "sample_1ab_tree": {
+          "title": "Tree Map",
+          "contents": [
+            {
+              "layouts": [
+                {
+                  "id": "layout-1",
+                  "rows": [
+                    {
+                      "size": "50",
+                      "cells": [
+                        {
+                          "id": "dashboard-cell-1-1"
+                        }
+                      ]
+                    },
+                    {
+                      "size": "50",
+                      "cells": [
+                        {
+                          "id": "dashboard-cell-2-1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "contents": [
+                {
+                  "cell": "dashboard-cell-1-1",
+                  "component": "TreemapChart",
+                  "render-type": "basic",
+                  "datasourceName": "/",
+                  "generate-report": [
+                    "jasper"
+                  ]
+                },
+                {
+                  "cell": "dashboard-cell-2-1",
+                  "component": "DataTable",
+                  "status-bar": false,
+                  "datasourceName": "/"
+                }
+              ],
+              "component": "GridContainer"
+            }
+          ],
+          "component": "TabWrapper",
+          "datasources": [
+            {
+              "name": "/",
+              "linked": [
+                "crosswalk",
+                "crosswalk_hcpcs"
+              ],
+              "component": "Datasource",
+              "pagination": {
+                "max": 150000
+              },
+              "aggregation": {
+                "groupMaps": [
+                  {
+                    "filter": [
+                      {
+                        "operands": [
+                          "CLM_FROM_DT",
+                          "'2010-10-01'"
+                        ],
+                        "operator": "<"
+                      }
+                    ]
+                  }
+                ],
+                "defaultGrouping": null
+              },
+              "dql-metrics": [
+                "payment_sum",
+                "payment_avg",
+                "coins_count",
+                "claims_count",
+                "patient_count",
+                "DX_CODE",
+                "HCPCS_CODE",
+                "stratification",
+                "start_dt",
+                "end_dt",
+                "coinsrnc_nch_sum",
+                "sum_coinsrnc_nch_sum",
+                "coinsrnc_nch_ratio",
+                "sum_coinsrnc_nch_ratio",
+                "ratio_coinsrnc_nch_sum",
+                "coinsrnc_nch_mult",
+                "sum_coinsrnc_nch_mult",
+                "mult_coinsrnc_nch_sum",
+                "bracket_year"
+              ],
+              "dql-support": true,
+              "max-threshold": 10000,
+              "flat-table-target": "sample_1ab",
+              "select-multiple-items": false,
+              "select-multiple-columns": true
+            }
+          ],
+          "right-panel": {
+            "tab-array": [],
+            "defaultTab": null
+          },
+          "generate-report": []
+        },
+        "sample_1ab_donut": {
+          "title": "Donut",
+          "contents": [
+            {
+              "layouts": [
+                {
+                  "id": "layout-1",
+                  "rows": [
+                    {
+                      "cells": [
+                        {
+                          "id": "dashboard-cell-1-1"
+                        }
+                      ]
+                    },
+                    {
+                      "cells": [
+                        {
+                          "id": "dashboard-cell-2-1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "contents": [
+                {
+                  "cell": "dashboard-cell-1-1",
+                  "component": "DonutChart",
+                  "datasourceName": "/",
+                  "generate-report": [
+                    "jasper"
+                  ],
+                  "boost-point-threshold": 200
+                },
+                {
+                  "cell": "dashboard-cell-2-1",
+                  "component": "DataTable",
+                  "status-bar": false,
+                  "datasourceName": "/"
+                }
+              ],
+              "component": "GridContainer"
+            }
+          ],
+          "component": "TabWrapper",
+          "datasources": [
+            {
+              "name": "/",
+              "linked": [
+                "crosswalk",
+                "crosswalk_hcpcs"
+              ],
+              "component": "Datasource",
+              "pagination": {
+                "max": 150000
+              },
+              "aggregation": {
+                "groupMaps": [
+                  {
+                    "filter": [
+                      {
+                        "operands": [
+                          "CLM_FROM_DT",
+                          "'2010-10-01'"
+                        ],
+                        "operator": "<"
+                      }
+                    ]
+                  }
+                ],
+                "defaultGrouping": null
+              },
+              "dql-metrics": [
+                "payment_sum",
+                "payment_avg",
+                "coins_count",
+                "claims_count",
+                "patient_count",
+                "DX_CODE",
+                "HCPCS_CODE",
+                "stratification",
+                "start_dt",
+                "end_dt",
+                "coinsrnc_nch_sum",
+                "sum_coinsrnc_nch_sum",
+                "coinsrnc_nch_ratio",
+                "sum_coinsrnc_nch_ratio",
+                "ratio_coinsrnc_nch_sum",
+                "coinsrnc_nch_mult",
+                "sum_coinsrnc_nch_mult",
+                "mult_coinsrnc_nch_sum",
+                "bracket_year"
+              ],
+              "dql-support": true,
+              "max-threshold": 10000,
+              "flat-table-target": "sample_1ab",
+              "select-multiple-items": false,
+              "select-multiple-columns": true
+            }
+          ],
+          "right-panel": {
+            "tab-array": [],
+            "defaultTab": null
+          },
+          "generate-report": []
+        },
+        "sample_1ab_series": {
+          "title": "Line & Stacked",
+          "contents": [
+            {
+              "layouts": [
+                {
+                  "id": "layout-1",
+                  "rows": [
+                    {
+                      "size": "30",
+                      "cells": [
+                        {
+                          "id": "dashboard-cell-1-1",
+                          "size": "40"
+                        },
+                        {
+                          "id": "dashboard-cell-1-2",
+                          "size": "60"
+                        }
+                      ]
+                    },
+                    {
+                      "size": "70",
+                      "cells": [
+                        {
+                          "id": "dashboard-cell-2-1",
+                          "size": "100"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "contents": [
+                {
+                  "cell": "dashboard-cell-1-1",
+                  "x-axis": [
+                    {
+                      "dim": "CLM_FROM_DT"
+                    },
+                    {
+                      "dim": "ADMIT_QUARTER"
+                    },
+                    {
+                      "dim": "ADMIT_MONTH"
+                    },
+                    {
+                      "dim": "ADMIT_YEAR"
+                    }
+                  ],
+                  "component": "LineChart",
+                  "datasourceName": "/",
+                  "generate-report": [
+                    "jasper"
+                  ],
+                  "boost-point-threshold": 200,
+                  "boost-series-threshold": 100
+                },
+                {
+                  "cell": "dashboard-cell-1-2",
+                  "x-axis": [
+                    {
+                      "dim": "CLM_FROM_DT"
+                    },
+                    {
+                      "dim": "ADMIT_QUARTER"
+                    },
+                    {
+                      "dim": "ADMIT_MONTH"
+                    },
+                    {
+                      "dim": "ADMIT_YEAR"
+                    }
+                  ],
+                  "component": "StackedAreaChart",
+                  "datasourceName": "/",
+                  "generate-report": [
+                    "jasper"
+                  ],
+                  "boost-point-threshold": 200,
+                  "boost-series-threshold": 100
+                },
+                {
+                  "cell": "dashboard-cell-2-1",
+                  "component": "DataTable",
+                  "status-bar": false,
+                  "datasourceName": "/"
+                }
+              ],
+              "component": "GridContainer"
+            }
+          ],
+          "component": "TabWrapper",
+          "datasources": [
+            {
+              "name": "/",
+              "linked": [
+                "crosswalk",
+                "crosswalk_hcpcs"
+              ],
+              "component": "Datasource",
+              "pagination": {
+                "max": 150000
+              },
+              "aggregation": {
+                "groupMaps": [
+                  {
+                    "filter": [
+                      {
+                        "operands": [
+                          "CLM_FROM_DT",
+                          "'2010-10-01'"
+                        ],
+                        "operator": "<"
+                      }
+                    ]
+                  }
+                ],
+                "defaultGrouping": null
+              },
+              "dql-metrics": [
+                "payment_sum",
+                "payment_avg",
+                "coins_count",
+                "claims_count",
+                "patient_count",
+                "payment_10",
+                "payment_25",
+                "payment_50",
+                "DX_CODE",
+                "HCPCS_CODE",
+                "stratification",
+                "start_dt",
+                "end_dt",
+                "bracket_year"
+              ],
+              "dql-support": true,
+              "max-threshold": 10000,
+              "flat-table-target": "sample_1ab",
+              "select-multiple-items": false,
+              "select-multiple-columns": true
+            }
+          ],
+          "right-panel": {
+            "tab-array": [],
+            "defaultTab": null
+          },
+          "generate-report": []
+        },
+        "sample_1ab_pie_bar": {
+          "title": "Bar & Pie",
+          "contents": [
+            {
+              "layouts": [
+                {
+                  "id": "layout-1",
+                  "rows": [
+                    {
+                      "size": "60",
+                      "cells": [
+                        {
+                          "id": "dashboard-cell-1-1",
+                          "size": "70"
+                        },
+                        {
+                          "id": "dashboard-cell-1-2"
+                        }
+                      ]
+                    },
+                    {
+                      "cells": [
+                        {
+                          "id": "dashboard-cell-2-1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "contents": [
+                {
+                  "cell": "dashboard-cell-1-1",
+                  "component": "BarChart",
+                  "datasourceName": "/",
+                  "generate-report": [
+                    "jasper"
+                  ],
+                  "boost-point-threshold": 500
+                },
+                {
+                  "cell": "dashboard-cell-1-2",
+                  "component": "PieChart",
+                  "datasourceName": "/",
+                  "generate-report": [
+                    "jasper"
+                  ],
+                  "boost-point-threshold": 500
+                },
+                {
+                  "cell": "dashboard-cell-2-1",
+                  "component": "DataTable",
+                  "datasourceName": "/"
+                }
+              ],
+              "component": "GridContainer"
+            }
+          ],
+          "component": "TabWrapper",
+          "datasources": [
+            {
+              "name": "/",
+              "rules": [
+                {
+                  "rule": "monitor.stratification",
+                  "message": "User must select a stratification option",
+                  "visible": true,
+                  "ruleName": "stratification-required"
+                },
+                {
+                  "rule": "monitor.start_dt",
+                  "message": "User must make selections for Start Date",
+                  "visible": true,
+                  "ruleName": "start-dt-required"
+                },
+                {
+                  "rule": "monitor.end_dt",
+                  "message": "User must make selections for End Date",
+                  "visible": true,
+                  "ruleName": "end-date-required"
+                },
+                {
+                  "rule": "monitor.start_dt < monitor.end_dt",
+                  "message": "Start Date must precede End Date",
+                  "visible": true,
+                  "ruleName": "start-end-precede"
+                },
+                {
+                  "rule": "has(monitor, \"HCPCS_CODE\") + has(monitor, \"DX_CODE\") >= 2",
+                  "message": "User must make selections for Diagnosis and HCPCS",
+                  "visible": true,
+                  "ruleName": "codes-required"
+                }
+              ],
+              "linked": [
+                "crosswalk",
+                "crosswalk_hcpcs"
+              ],
+              "component": "Datasource",
+              "pagination": {
+                "max": 150000
+              },
+              "aggregation": {
+                "groupMaps": [
+                  {
+                    "filter": [
+                      {
+                        "operands": [
+                          "CLM_FROM_DT",
+                          "'2010-10-01'"
+                        ],
+                        "operator": "<"
+                      }
+                    ]
+                  }
+                ],
+                "defaultGrouping": null
+              },
+              "dql-metrics": [
+                "payment_sum",
+                "payment_avg",
+                "coins_count",
+                "claims_count",
+                "patient_count",
+                "DX_CODE",
+                "HCPCS_CODE",
+                "stratification",
+                "start_dt",
+                "end_dt",
+                "coinsrnc_nch_sum",
+                "sum_coinsrnc_nch_sum",
+                "coinsrnc_nch_ratio",
+                "sum_coinsrnc_nch_ratio",
+                "ratio_coinsrnc_nch_sum",
+                "coinsrnc_nch_mult",
+                "sum_coinsrnc_nch_mult",
+                "mult_coinsrnc_nch_sum",
+                "bracket_year"
+              ],
+              "dql-support": true,
+              "max-threshold": 10000,
+              "flat-table-target": "sample_1ab",
+              "select-multiple-items": false,
+              "select-multiple-columns": true
+            }
+          ],
+          "right-panel": {
+            "tab-array": [],
+            "defaultTab": null
+          },
+          "generate-report": []
+        },
+        "sample_1ab_scatter": {
+          "title": "Scatterplot",
+          "contents": [
+            {
+              "layouts": [
+                {
+                  "id": "layout-1",
+                  "rows": [
+                    {
+                      "size": "70",
+                      "cells": [
+                        {
+                          "id": "dashboard-cell-1-1"
+                        }
+                      ]
+                    },
+                    {
+                      "size": "30",
+                      "cells": [
+                        {
+                          "id": "dashboard-cell-2-1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "contents": [
+                {
+                  "cell": "dashboard-cell-1-1",
+                  "component": "ScatterplotChart",
+                  "datasourceName": "/",
+                  "generate-report": [
+                    "jasper"
+                  ],
+                  "boost-point-threshold": 200,
+                  "boost-series-threshold": 100
+                },
+                {
+                  "cell": "dashboard-cell-2-1",
+                  "component": "DataTable",
+                  "status-bar": false,
+                  "datasourceName": "/",
+                  "enable-metric-selection": false
+                }
+              ],
+              "component": "GridContainer"
+            }
+          ],
+          "component": "TabWrapper",
+          "datasources": [
+            {
+              "name": "/",
+              "linked": [
+                "crosswalk",
+                "crosswalk_hcpcs"
+              ],
+              "component": "Datasource",
+              "pagination": {
+                "max": 150000
+              },
+              "aggregation": {
+                "groupMaps": [
+                  {
+                    "filter": [
+                      {
+                        "operands": [
+                          "CLM_FROM_DT",
+                          "'2010-10-01'"
+                        ],
+                        "operator": "<"
+                      }
+                    ]
+                  }
+                ],
+                "defaultGrouping": null
+              },
+              "dql-metrics": [
+                "payment_sum",
+                "payment_avg",
+                "coins_count",
+                "claims_count",
+                "patient_count",
+                "DX_CODE",
+                "HCPCS_CODE",
+                "stratification",
+                "start_dt",
+                "end_dt",
+                "coinsrnc_nch_sum",
+                "sum_coinsrnc_nch_sum",
+                "coinsrnc_nch_ratio",
+                "sum_coinsrnc_nch_ratio",
+                "ratio_coinsrnc_nch_sum",
+                "coinsrnc_nch_mult",
+                "sum_coinsrnc_nch_mult",
+                "mult_coinsrnc_nch_sum",
+                "bracket_year"
+              ],
+              "dql-support": true,
+              "max-threshold": 10000,
+              "flat-table-target": "sample_1ab",
+              "select-multiple-items": false,
+              "select-multiple-columns": true
+            }
+          ],
+          "right-panel": {
+            "tab-array": [],
+            "defaultTab": null
+          },
+          "generate-report": []
+        },
+        "sample_1ab_stacked_bar": {
+          "title": "Stacked Bar",
+          "contents": [
+            {
+              "layouts": [
+                {
+                  "id": "layout-1",
+                  "rows": [
+                    {
+                      "cells": [
+                        {
+                          "id": "dashboard-cell-1-1"
+                        }
+                      ]
+                    },
+                    {
+                      "cells": [
+                        {
+                          "id": "dashboard-cell-2-1"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "contents": [
+                {
+                  "cell": "dashboard-cell-1-1",
+                  "x-axis": [
+                    {
+                      "dim": "CLM_FROM_DT"
+                    },
+                    {
+                      "dim": "ADMIT_QUARTER"
+                    },
+                    {
+                      "dim": "ADMIT_MONTH"
+                    },
+                    {
+                      "dim": "ADMIT_YEAR"
+                    }
+                  ],
+                  "component": "StackedBarChart",
+                  "render-type": "normal",
+                  "datasourceName": "/",
+                  "generate-report": [
+                    "jasper"
+                  ],
+                  "boost-point-threshold": 200,
+                  "boost-series-threshold": 100
+                },
+                {
+                  "cell": "dashboard-cell-2-1",
+                  "component": "DataTable",
+                  "status-bar": false,
+                  "datasourceName": "/"
+                }
+              ],
+              "component": "GridContainer"
+            }
+          ],
+          "component": "TabWrapper",
+          "datasources": [
+            {
+              "name": "/",
+              "linked": [
+                "crosswalk",
+                "crosswalk_hcpcs"
+              ],
+              "component": "Datasource",
+              "pagination": {
+                "max": 150000
+              },
+              "aggregation": {
+                "groupMaps": [
+                  {
+                    "filter": [
+                      {
+                        "operands": [
+                          "CLM_FROM_DT",
+                          "'2010-10-01'"
+                        ],
+                        "operator": "<"
+                      }
+                    ]
+                  }
+                ],
+                "defaultGrouping": null
+              },
+              "dql-metrics": [
+                "payment_sum",
+                "payment_avg",
+                "coins_count",
+                "claims_count",
+                "patient_count",
+                "DX_CODE",
+                "HCPCS_CODE",
+                "stratification",
+                "start_dt",
+                "end_dt",
+                "coinsrnc_nch_sum",
+                "sum_coinsrnc_nch_sum",
+                "coinsrnc_nch_ratio",
+                "sum_coinsrnc_nch_ratio",
+                "ratio_coinsrnc_nch_sum",
+                "coinsrnc_nch_mult",
+                "sum_coinsrnc_nch_mult",
+                "mult_coinsrnc_nch_sum",
+                "bracket_year"
+              ],
+              "dql-support": true,
+              "max-threshold": 10000,
+              "flat-table-target": "sample_1ab",
+              "select-multiple-items": false,
+              "select-multiple-columns": true
+            }
+          ],
+          "right-panel": {
+            "tab-array": [],
+            "defaultTab": null
+          },
+          "generate-report": []
+        }
+      }
+    },
+    "tabs": [
+      "viz"
+    ],
+    "version": "5.2.14",
+    "component": "LeftNavApp",
+    "gitParseError": true
+  },
+  "createdBy": "TranSecManager",
+  "created": "2025-06-11T21:23:08.938273",
+  "name": "FDA Claims 2(secdev,v5)_UI_Template",
+  "description": "FDA Claims 2(secdev,v5)_UI_Template from Configuration Application csv",
+  "modified": "2026-06-23T18:43:23.755711",
+  "attributes": null,
+  "modifiedBy": "TranSecManager",
+  "id": 214,
+  "uuid": "6514183a-a0d7-4f52-b321-7fcc7da4e5ed"
+}

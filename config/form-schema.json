@@ -1,0 +1,3930 @@
+{
+  "pie-chart": {
+    "formSchema": [
+      {
+        "name": "title",
+        "type": "tab",
+        "label": "Chart Title",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Title Text",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Title Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "subtitle",
+        "type": "tab",
+        "label": "Chart Subtitle",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Subtitle",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Subtitle Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legend",
+        "type": "tab",
+        "label": "Legend",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Legend"
+          },
+          {
+            "$formkit": "select",
+            "name": "layout",
+            "type": "select",
+            "label": "Layout of the Legend items",
+            "options": [
+              {
+                "label": "Horizontal",
+                "value": "horizontal"
+              },
+              {
+                "label": "Vertical",
+                "value": "vertical"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "align",
+            "type": "select",
+            "label": "Placement of Legend Box, Horizontal Alignment",
+            "options": [
+              {
+                "label": "Right",
+                "value": "right"
+              },
+              {
+                "label": "Left",
+                "value": "left"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "verticalAlign",
+            "type": "select",
+            "label": "Placement of Legend Box, Vertical Alignment",
+            "options": [
+              {
+                "label": "Top",
+                "value": "top"
+              },
+              {
+                "label": "Bottom",
+                "value": "bottom"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "group",
+            "name": "itemStyle",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Style Option: Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "plotOptions",
+        "type": "tab",
+        "label": "Pie Chart",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "series",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "dataLabels",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Enable Data Labels"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "tooltip",
+        "type": "tab",
+        "label": "Tooltip",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Tooltip"
+          }
+        ]
+      }
+    ]
+  },
+  "donut-chart": {
+    "formSchema": [
+      {
+        "name": "title",
+        "type": "tab",
+        "label": "Chart Title",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Title Text",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Title Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "subtitle",
+        "type": "tab",
+        "label": "Chart Subtitle",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Subtitle",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Subtitle Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legend",
+        "type": "tab",
+        "label": "Legend",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Legend"
+          },
+          {
+            "$formkit": "select",
+            "name": "layout",
+            "type": "select",
+            "label": "Layout of the Legend items",
+            "options": [
+              {
+                "label": "Horizontal",
+                "value": "horizontal"
+              },
+              {
+                "label": "Vertical",
+                "value": "vertical"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "align",
+            "type": "select",
+            "label": "Placement of Legend Box, Horizontal Alignment",
+            "options": [
+              {
+                "label": "Right",
+                "value": "right"
+              },
+              {
+                "label": "Left",
+                "value": "left"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "verticalAlign",
+            "type": "select",
+            "label": "Placement of Legend Box, Vertical Alignment",
+            "options": [
+              {
+                "label": "Top",
+                "value": "top"
+              },
+              {
+                "label": "Bottom",
+                "value": "bottom"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "group",
+            "name": "itemStyle",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Style Option: Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "plotOptions",
+        "type": "tab",
+        "label": "Donut Chart",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "series",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "dataLabels",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Enable Data Labels"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "tooltip",
+        "type": "tab",
+        "label": "Tooltip",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Tooltip"
+          }
+        ]
+      }
+    ]
+  },
+  "line-chart": {
+    "formSchema": [
+      {
+        "name": "title",
+        "type": "tab",
+        "label": "Chart Title",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Title Text",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Title Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "subtitle",
+        "type": "tab",
+        "label": "Chart Subtitle",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Subtitle",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Subtitle Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legend",
+        "type": "tab",
+        "label": "Legend",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Legend"
+          },
+          {
+            "$formkit": "select",
+            "name": "layout",
+            "type": "select",
+            "label": "Layout of the Legend items",
+            "options": [
+              {
+                "label": "Horizontal",
+                "value": "horizontal"
+              },
+              {
+                "label": "Vertical",
+                "value": "vertical"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "align",
+            "type": "select",
+            "label": "Placement of Legend Box, Horizontal Alignment",
+            "options": [
+              {
+                "label": "Right",
+                "value": "right"
+              },
+              {
+                "label": "Center",
+                "value": "center"
+              },
+              {
+                "label": "Left",
+                "value": "left"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "verticalAlign",
+            "type": "select",
+            "label": "Placement of Legend Box, Vertical Alignment",
+            "options": [
+              {
+                "label": "Top",
+                "value": "top"
+              },
+              {
+                "label": "Bottom",
+                "value": "bottom"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "group",
+            "name": "itemStyle",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Style Option: Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "xAxis",
+        "type": "tab",
+        "label": "X Axis",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "opposite",
+            "type": "checkbox",
+            "label": "Place X-Axis on Opposite Side"
+          },
+          {
+            "$formkit": "group",
+            "name": "labels",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "rotation",
+                "type": "select",
+                "label": "X-Axis Label Rotation",
+                "options": ["0", "15", "30", "45", "60", "75", "90"],
+                "valueType": "number"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "X-Axis Label Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "title",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "text",
+                "name": "text",
+                "type": "text",
+                "label": "X-Axis Title Text",
+                "validation": "(500)length:0,200"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "X-Axis Title Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "$formkit": "checkbox",
+            "name": "crosshair",
+            "type": "checkbox",
+            "label": "X-Axis Crosshair Visibility"
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "reversed",
+            "type": "checkbox",
+            "label": "Reversed Axes"
+          }
+        ]
+      },
+      {
+        "name": "yAxis",
+        "type": "tab",
+        "label": "Y Axis",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "opposite",
+            "type": "checkbox",
+            "label": "Place Y-Axis on Opposite Side"
+          },
+          {
+            "$formkit": "group",
+            "name": "labels",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "rotation",
+                "type": "select",
+                "label": "Y-Axis Label Rotation",
+                "options": ["0", "15", "30", "45", "60", "75", "90"],
+                "valueType": "number"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "Y-Axis Label Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "title",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "text",
+                "name": "text",
+                "type": "text",
+                "label": "Y-Axis Title Text",
+                "validation": "(500)length:0,200"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "Y-Axis Title Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "crosshair",
+            "type": "checkbox",
+            "label": "Y-Axis Crosshair Visibility"
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "reversed",
+            "type": "checkbox",
+            "label": "Reversed Axes"
+          }
+        ]
+      },
+      {
+        "name": "plotOptions",
+        "type": "tab",
+        "label": "Line Chart",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "line",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "step",
+                "type": "select",
+                "label": "Apply steps to line",
+                "options": [
+                  {
+                    "label": "Left",
+                    "value": "left"
+                  },
+                  {
+                    "label": "Center",
+                    "value": "center"
+                  },
+                  {
+                    "label": "Right",
+                    "value": "right"
+                  },
+                  {
+                    "label": "None",
+                    "value": null
+                  }
+                ],
+                "valueType": "text"
+              },
+              {
+                "$formkit": "select",
+                "name": "stacking",
+                "type": "select",
+                "label": "Stack lines",
+                "options": [
+                  {
+                    "label": "Normal",
+                    "value": "normal"
+                  },
+                  {
+                    "label": "Percent",
+                    "value": "percent"
+                  },
+                  {
+                    "label": "None",
+                    "value": null
+                  }
+                ],
+                "valueType": "text"
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "series",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "marker",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Enable Markers"
+                  }
+                ]
+              },
+              {
+                "$formkit": "select",
+                "name": "lineWidth",
+                "type": "select",
+                "label": "Line Width",
+                "options": [
+                  {
+                    "label": "1/2",
+                    "value": "0.5"
+                  },
+                  {
+                    "label": "1",
+                    "value": "1"
+                  },
+                  {
+                    "label": "2",
+                    "value": "2"
+                  },
+                  {
+                    "label": "3",
+                    "value": "3"
+                  },
+                  {
+                    "label": "4",
+                    "value": "4"
+                  }
+                ],
+                "valueType": "number"
+              },
+              {
+                "$formkit": "group",
+                "name": "dataLabels",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Data Point Labels"
+                  }
+                ]
+              },
+              {
+                "$formkit": "group",
+                "name": "label",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Series Labels"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "chart",
+        "type": "tab",
+        "label": "Chart",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "inverted",
+            "type": "checkbox",
+            "label": "Invert axes"
+          }
+        ]
+      },
+      {
+        "name": "tooltip",
+        "type": "tab",
+        "label": "Tooltip",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable tooltip"
+          }
+        ]
+      },
+      {
+        "name": "xAxis",
+        "type": "tab",
+        "label": "Zoom",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "zoomEnabled",
+            "type": "checkbox",
+            "label": "Zoom"
+          }
+        ]
+      }
+    ]
+  },
+  "stacked-area-chart": {
+    "formSchema": [
+      {
+        "name": "title",
+        "type": "tab",
+        "label": "Chart Title",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Title Text",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Title Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "subtitle",
+        "type": "tab",
+        "label": "Chart Subtitle",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Subtitle",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Subtitle Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legend",
+        "type": "tab",
+        "label": "Legend",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Legend"
+          },
+          {
+            "$formkit": "select",
+            "name": "layout",
+            "type": "select",
+            "label": "Layout of the Legend items",
+            "options": [
+              {
+                "label": "Horizontal",
+                "value": "horizontal"
+              },
+              {
+                "label": "Vertical",
+                "value": "vertical"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "align",
+            "type": "select",
+            "label": "Placement of Legend Box, Horizontal Alignment",
+            "options": [
+              {
+                "label": "Right",
+                "value": "right"
+              },
+              {
+                "label": "Center",
+                "value": "center"
+              },
+              {
+                "label": "Left",
+                "value": "left"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "verticalAlign",
+            "type": "select",
+            "label": "Placement of Legend Box, Vertical Alignment",
+            "options": [
+              {
+                "label": "Top",
+                "value": "top"
+              },
+              {
+                "label": "Bottom",
+                "value": "bottom"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "group",
+            "name": "itemStyle",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Style Option: Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "xAxis",
+        "type": "tab",
+        "label": "X Axis",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "opposite",
+            "type": "checkbox",
+            "label": "Place X-Axis on Opposite Side"
+          },
+          {
+            "$formkit": "group",
+            "name": "labels",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "rotation",
+                "type": "select",
+                "label": "X-Axis Label Rotation",
+                "options": ["0", "15", "30", "45", "60", "75", "90"],
+                "valueType": "number"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "X-Axis Label Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "title",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "text",
+                "name": "text",
+                "type": "text",
+                "label": "X-Axis Title Text",
+                "validation": "(500)length:0,200"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "X-Axis Title Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "$formkit": "checkbox",
+            "name": "crosshair",
+            "type": "checkbox",
+            "label": "X-Axis Crosshair Visibility"
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "reversed",
+            "type": "checkbox",
+            "label": "Reversed Axes"
+          }
+        ]
+      },
+      {
+        "name": "yAxis",
+        "type": "tab",
+        "label": "Y Axis",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "opposite",
+            "type": "checkbox",
+            "label": "Place Y-Axis on Opposite Side"
+          },
+          {
+            "$formkit": "group",
+            "name": "labels",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "rotation",
+                "type": "select",
+                "label": "Y-Axis Label Rotation",
+                "options": ["0", "15", "30", "45", "60", "75", "90"],
+                "valueType": "number"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "Y-Axis Label Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "title",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "text",
+                "name": "text",
+                "type": "text",
+                "label": "Y-Axis Title Text",
+                "validation": "(500)length:0,200"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "Y-Axis Title Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "crosshair",
+            "type": "checkbox",
+            "label": "Y-Axis Crosshair Visibility"
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "reversed",
+            "type": "checkbox",
+            "label": "Reversed Axes"
+          }
+        ]
+      },
+      {
+        "name": "plotOptions",
+        "type": "tab",
+        "label": "Stacked Area Chart",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "area",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "step",
+                "type": "select",
+                "label": "Apply steps to line",
+                "options": [
+                  {
+                    "label": "Left",
+                    "value": "left"
+                  },
+                  {
+                    "label": "Center",
+                    "value": "center"
+                  },
+                  {
+                    "label": "Right",
+                    "value": "right"
+                  },
+                  {
+                    "label": "None",
+                    "value": null
+                  }
+                ],
+                "valueType": "text"
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "series",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "marker",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Enable Markers"
+                  }
+                ]
+              },
+              {
+                "$formkit": "select",
+                "name": "lineWidth",
+                "type": "select",
+                "label": "Line Width",
+                "options": [
+                  {
+                    "label": "1/2",
+                    "value": "0.5"
+                  },
+                  {
+                    "label": "1",
+                    "value": "1"
+                  },
+                  {
+                    "label": "2",
+                    "value": "2"
+                  },
+                  {
+                    "label": "3",
+                    "value": "3"
+                  },
+                  {
+                    "label": "4",
+                    "value": "4"
+                  }
+                ],
+                "valueType": "number"
+              },
+              {
+                "$formkit": "group",
+                "name": "dataLabels",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Data Point Labels"
+                  }
+                ]
+              },
+              {
+                "$formkit": "group",
+                "name": "label",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Series Labels"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "chart",
+        "type": "tab",
+        "label": "Chart",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "inverted",
+            "type": "checkbox",
+            "label": "Invert axes"
+          }
+        ]
+      },
+      {
+        "name": "tooltip",
+        "type": "tab",
+        "label": "Tooltip",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable tooltip"
+          }
+        ]
+      },
+      {
+        "name": "xAxis",
+        "type": "tab",
+        "label": "Zoom",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "zoomEnabled",
+            "type": "checkbox",
+            "label": "Zoom"
+          }
+        ]
+      }
+    ]
+  },
+  "bar-chart": {
+    "formSchema": [
+      {
+        "name": "title",
+        "type": "tab",
+        "label": "Chart Title",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Title Text",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Title Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "subtitle",
+        "type": "tab",
+        "label": "Chart Subtitle",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Subtitle",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Subtitle Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legend",
+        "type": "tab",
+        "label": "Legend",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Legend"
+          },
+          {
+            "$formkit": "select",
+            "name": "layout",
+            "type": "select",
+            "label": "Layout of the Legend items",
+            "options": [
+              {
+                "label": "Horizontal",
+                "value": "horizontal"
+              },
+              {
+                "label": "Vertical",
+                "value": "vertical"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "align",
+            "type": "select",
+            "label": "Placement of Legend Box, Horizontal Alignment",
+            "options": [
+              {
+                "label": "Right",
+                "value": "right"
+              },
+              {
+                "label": "Center",
+                "value": "center"
+              },
+              {
+                "label": "Left",
+                "value": "left"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "verticalAlign",
+            "type": "select",
+            "label": "Placement of Legend Box, Vertical Alignment",
+            "options": [
+              {
+                "label": "Top",
+                "value": "top"
+              },
+              {
+                "label": "Bottom",
+                "value": "bottom"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "group",
+            "name": "itemStyle",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Style Option: Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "xAxis",
+        "type": "tab",
+        "label": "X Axis",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "opposite",
+            "type": "checkbox",
+            "label": "Place X-Axis on Opposite Side"
+          },
+          {
+            "$formkit": "group",
+            "name": "labels",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "rotation",
+                "type": "select",
+                "label": "X-Axis Label Rotation",
+                "options": ["0", "15", "30", "45", "60", "75", "90"],
+                "valueType": "number"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "X-Axis Label Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "title",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "text",
+                "name": "text",
+                "type": "text",
+                "label": "X-Axis Title Text",
+                "validation": "(500)length:0,200"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "X-Axis Title Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "$formkit": "checkbox",
+            "name": "crosshair",
+            "type": "checkbox",
+            "label": "X-Axis Crosshair Visibility"
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "reversed",
+            "type": "checkbox",
+            "label": "Reversed Axes"
+          }
+        ]
+      },
+      {
+        "name": "yAxis",
+        "type": "tab",
+        "label": "Y Axis",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "opposite",
+            "type": "checkbox",
+            "label": "Place Y-Axis on Opposite Side"
+          },
+          {
+            "$formkit": "group",
+            "name": "labels",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "rotation",
+                "type": "select",
+                "label": "Y-Axis Label Rotation",
+                "options": ["0", "15", "30", "45", "60", "75", "90"],
+                "valueType": "number"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "Y-Axis Label Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "title",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "text",
+                "name": "text",
+                "type": "text",
+                "label": "Y-Axis Title Text",
+                "validation": "(500)length:0,200"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "Y-Axis Title Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "crosshair",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "width",
+                "type": "select",
+                "label": "Y-Axis Crosshair Line Width",
+                "options": ["0", "1", "2"],
+                "valueType": "number"
+              }
+            ]
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "reversed",
+            "type": "checkbox",
+            "label": "Reversed Axes"
+          }
+        ]
+      },
+      {
+        "name": "plotOptions",
+        "type": "tab",
+        "label": "Bar/Column Chart",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "column",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "dataLabels",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Enable Data Labels"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "chart",
+        "type": "tab",
+        "label": "Chart",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "inverted",
+            "type": "checkbox",
+            "label": "Invert Axes"
+          }
+        ]
+      },
+      {
+        "name": "tooltip",
+        "type": "tab",
+        "label": "Tooltip",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Tooltip"
+          }
+        ]
+      },
+      {
+        "name": "xAxis",
+        "type": "tab",
+        "label": "Zoom",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "zoomEnabled",
+            "type": "checkbox",
+            "label": "Zoom"
+          }
+        ]
+      }
+    ]
+  },
+  "scatterplot": {
+    "formSchema": [
+      {
+        "name": "title",
+        "type": "tab",
+        "label": "Chart Title",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Title Text",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Title Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "subtitle",
+        "type": "tab",
+        "label": "Chart Subtitle",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Subtitle",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Subtitle Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legend",
+        "type": "tab",
+        "label": "Legend",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Legend"
+          },
+          {
+            "$formkit": "select",
+            "name": "layout",
+            "type": "select",
+            "label": "Layout of the Legend items",
+            "options": [
+              {
+                "label": "Horizontal",
+                "value": "horizontal"
+              },
+              {
+                "label": "Vertical",
+                "value": "vertical"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "align",
+            "type": "select",
+            "label": "Placement of Legend Box, Horizontal Alignment",
+            "options": [
+              {
+                "label": "Right",
+                "value": "right"
+              },
+              {
+                "label": "Center",
+                "value": "center"
+              },
+              {
+                "label": "Left",
+                "value": "left"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "verticalAlign",
+            "type": "select",
+            "label": "Placement of Legend Box, Vertical Alignment",
+            "options": [
+              {
+                "label": "Top",
+                "value": "top"
+              },
+              {
+                "label": "Bottom",
+                "value": "bottom"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "group",
+            "name": "itemStyle",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Style Option: Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "xAxis",
+        "type": "tab",
+        "label": "X Axis",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "opposite",
+            "type": "checkbox",
+            "label": "Place X-Axis on Opposite Side"
+          },
+          {
+            "$formkit": "group",
+            "name": "labels",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "rotation",
+                "type": "select",
+                "label": "X-Axis Label Rotation",
+                "options": ["0", "15", "30", "45", "60", "75", "90"],
+                "valueType": "number"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "X-Axis Label Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "title",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "X-Axis Title Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "$formkit": "checkbox",
+            "name": "crosshair",
+            "type": "checkbox",
+            "label": "X-Axis Crosshair Visibility"
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "reversed",
+            "type": "checkbox",
+            "label": "Reversed Axes"
+          },
+          {
+            "$formkit": "select",
+            "name": "gridLineWidth",
+            "type": "select",
+            "label": "X-Axis Grid Lines",
+            "options": ["0", "1", "2"],
+            "valueType": "number"
+          }
+        ]
+      },
+      {
+        "name": "yAxis",
+        "type": "tab",
+        "label": "Y Axis",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "opposite",
+            "type": "checkbox",
+            "label": "Place Y-Axis on Opposite Side"
+          },
+          {
+            "$formkit": "group",
+            "name": "labels",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "rotation",
+                "type": "select",
+                "label": "Y-Axis Label Rotation",
+                "options": ["0", "15", "30", "45", "60", "75", "90"],
+                "valueType": "number"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "Y-Axis Label Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "title",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "Y-Axis Title Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "$formkit": "checkbox",
+            "name": "crosshair",
+            "type": "checkbox",
+            "label": "Y-Axis Crosshair Visibility"
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "reversed",
+            "type": "checkbox",
+            "label": "Reversed Axes"
+          },
+          {
+            "$formkit": "select",
+            "name": "gridLineWidth",
+            "type": "select",
+            "label": "Y-Axis Grid Lines",
+            "options": ["0", "1", "2"],
+            "valueType": "number"
+          }
+        ]
+      },
+      {
+        "name": "plotOptions",
+        "type": "tab",
+        "label": "Scatterplot Chart",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "scatter",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "dataLabels",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Enable Data Labels"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "chart",
+        "type": "tab",
+        "label": "Chart",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "inverted",
+            "type": "checkbox",
+            "label": "Invert Axes"
+          }
+        ]
+      },
+      {
+        "name": "tooltip",
+        "type": "tab",
+        "label": "Tooltip",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Tooltip"
+          }
+        ]
+      },
+      {
+        "name": "chart",
+        "type": "tab",
+        "label": "Zoom",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "zooming",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "type",
+                "type": "select",
+                "label": "Zoom Type",
+                "options": [
+                  {
+                    "label": "None",
+                    "value": null
+                  },
+                  {
+                    "label": "X Axis",
+                    "value": "x"
+                  },
+                  {
+                    "label": "Y Axis",
+                    "value": "y"
+                  },
+                  {
+                    "label": "X and Y Axis",
+                    "value": "xy"
+                  }
+                ],
+                "valueType": "text"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "tile-grid-map": {
+    "formSchema": [
+      {
+        "name": "title",
+        "type": "tab",
+        "label": "Chart Title",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Title Text",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Title Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "subtitle",
+        "type": "tab",
+        "label": "Chart Subtitle",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Subtitle",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Subtitle Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legend",
+        "type": "tab",
+        "label": "Legend",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Legend"
+          },
+          {
+            "$formkit": "select",
+            "name": "layout",
+            "type": "select",
+            "label": "Layout of the Legend items",
+            "options": [
+              {
+                "label": "Horizontal",
+                "value": "horizontal"
+              },
+              {
+                "label": "Vertical",
+                "value": "vertical"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "align",
+            "type": "select",
+            "label": "Placement of Legend Box, Horizontal Alignment",
+            "options": [
+              {
+                "label": "Right",
+                "value": "right"
+              },
+              {
+                "label": "Center",
+                "value": "center"
+              },
+              {
+                "label": "Left",
+                "value": "left"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "verticalAlign",
+            "type": "select",
+            "label": "Placement of Legend Box, Vertical Alignment",
+            "options": [
+              {
+                "label": "Top",
+                "value": "top"
+              },
+              {
+                "label": "Bottom",
+                "value": "bottom"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "group",
+            "name": "itemStyle",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Style Option: Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "plotOptions",
+        "type": "tab",
+        "label": "Tile Grid Map",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "series",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "dataLabels",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Enable Data Labels"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "tooltip",
+        "type": "tab",
+        "label": "Tooltip",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Tooltip"
+          }
+        ]
+      }
+    ]
+  },
+  "tree-map": {
+    "formSchema": [
+      {
+        "name": "title",
+        "type": "tab",
+        "label": "Chart Title",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Title Text",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Title Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "subtitle",
+        "type": "tab",
+        "label": "Chart Subtitle",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Subtitle",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Subtitle Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legend",
+        "type": "tab",
+        "label": "Legend",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Legend"
+          },
+          {
+            "$formkit": "select",
+            "name": "layout",
+            "type": "select",
+            "label": "Layout of the Legend items",
+            "options": [
+              {
+                "label": "Horizontal",
+                "value": "horizontal"
+              },
+              {
+                "label": "Vertical",
+                "value": "vertical"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "align",
+            "type": "select",
+            "label": "Placement of Legend Box, Horizontal Alignment",
+            "options": [
+              {
+                "label": "Right",
+                "value": "right"
+              },
+              {
+                "label": "Center",
+                "value": "center"
+              },
+              {
+                "label": "Left",
+                "value": "left"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "verticalAlign",
+            "type": "select",
+            "label": "Placement of Legend Box, Vertical Alignment",
+            "options": [
+              {
+                "label": "Top",
+                "value": "top"
+              },
+              {
+                "label": "Bottom",
+                "value": "bottom"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "group",
+            "name": "itemStyle",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Style Option: Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "plotOptions",
+        "type": "tab",
+        "label": "Treemap Chart",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "series",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "dataLabels",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Enable Data Labels"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "tooltip",
+        "type": "tab",
+        "label": "Tooltip",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Tooltip"
+          }
+        ]
+      }
+    ]
+  },
+  "stacked-bar-chart": {
+    "formSchema": [
+      {
+        "name": "title",
+        "type": "tab",
+        "label": "Chart Title",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Title Text",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Title Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "subtitle",
+        "type": "tab",
+        "label": "Chart Subtitle",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Subtitle",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Subtitle Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "legend",
+        "type": "tab",
+        "label": "Legend",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Legend"
+          },
+          {
+            "$formkit": "select",
+            "name": "layout",
+            "type": "select",
+            "label": "Layout of the Legend items",
+            "options": [
+              {
+                "label": "Horizontal",
+                "value": "horizontal"
+              },
+              {
+                "label": "Vertical",
+                "value": "vertical"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "align",
+            "type": "select",
+            "label": "Placement of Legend Box, Horizontal Alignment",
+            "options": [
+              {
+                "label": "Right",
+                "value": "right"
+              },
+              {
+                "label": "Center",
+                "value": "center"
+              },
+              {
+                "label": "Left",
+                "value": "left"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "select",
+            "name": "verticalAlign",
+            "type": "select",
+            "label": "Placement of Legend Box, Vertical Alignment",
+            "options": [
+              {
+                "label": "Top",
+                "value": "top"
+              },
+              {
+                "label": "Bottom",
+                "value": "bottom"
+              }
+            ],
+            "valueType": "text"
+          },
+          {
+            "$formkit": "group",
+            "name": "itemStyle",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Style Option: Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "xAxis",
+        "type": "tab",
+        "label": "X Axis",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "opposite",
+            "type": "checkbox",
+            "label": "Place X-Axis on Opposite Side"
+          },
+          {
+            "$formkit": "group",
+            "name": "labels",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "rotation",
+                "type": "select",
+                "label": "X-Axis Label Rotation",
+                "options": ["0", "15", "30", "45", "60", "75", "90"],
+                "valueType": "number"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "X-Axis Label Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "title",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "text",
+                "name": "text",
+                "type": "text",
+                "label": "X-Axis Title Text",
+                "validation": "(500)length:0,200"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "X-Axis Title Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+
+          {
+            "$formkit": "checkbox",
+            "name": "crosshair",
+            "type": "checkbox",
+            "label": "X-Axis Crosshair Visibility"
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "reversed",
+            "type": "checkbox",
+            "label": "Reversed Axes"
+          }
+        ]
+      },
+      {
+        "name": "yAxis",
+        "type": "tab",
+        "label": "Y Axis",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "opposite",
+            "type": "checkbox",
+            "label": "Place Y-Axis on Opposite Side"
+          },
+          {
+            "$formkit": "group",
+            "name": "labels",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "rotation",
+                "type": "select",
+                "label": "Y-Axis Label Rotation",
+                "options": ["0", "15", "30", "45", "60", "75", "90"],
+                "valueType": "number"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "Y-Axis Label Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "group",
+            "name": "title",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "text",
+                "name": "text",
+                "type": "text",
+                "label": "Y-Axis Title Text",
+                "validation": "(500)length:0,200"
+              },
+              {
+                "$formkit": "group",
+                "name": "style",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "select",
+                    "name": "fontSize",
+                    "type": "select",
+                    "label": "Y-Axis Title Font Size",
+                    "options": [
+                      "8",
+                      "10",
+                      "12",
+                      "14",
+                      "16",
+                      "18",
+                      "20",
+                      "22",
+                      "24",
+                      "26",
+                      "28",
+                      "30",
+                      "32",
+                      "34"
+                    ],
+                    "valueType": "number"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "crosshair",
+            "type": "checkbox",
+            "label": "Y-Axis Crosshair Visibility"
+          },
+          {
+            "$formkit": "checkbox",
+            "name": "reversed",
+            "type": "checkbox",
+            "label": "Reversed Axes"
+          }
+        ]
+      },
+      {
+        "name": "plotOptions",
+        "type": "tab",
+        "label": "Stacked Bar Chart",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "series",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "dataLabels",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Data Point Labels"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "chart",
+        "type": "tab",
+        "label": "Chart",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "inverted",
+            "type": "checkbox",
+            "label": "Invert axes"
+          }
+        ]
+      },
+      {
+        "name": "tooltip",
+        "type": "tab",
+        "label": "Tooltip",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable tooltip"
+          }
+        ]
+      },
+      {
+        "name": "xAxis",
+        "type": "tab",
+        "label": "Zoom",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "zoomEnabled",
+            "type": "checkbox",
+            "label": "Zoom"
+          }
+        ]
+      }
+    ]
+  },
+  "bullet-chart": {
+    "formSchema": [
+      {
+        "name": "title",
+        "type": "tab",
+        "label": "Chart Label",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Label Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "subtitle",
+        "type": "tab",
+        "label": "Chart Title",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Title",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Title Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "plotOptions",
+        "type": "tab",
+        "label": "Bullet Chart",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "series",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "dataLabels",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Enable Data Labels"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "tooltip",
+        "type": "tab",
+        "label": "Tooltip",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Tooltip"
+          }
+        ]
+      }
+    ]
+  },
+  "network-graph": {
+    "formSchema": [
+      {
+        "name": "title",
+        "type": "tab",
+        "label": "Chart Title",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Title Text",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Title Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "subtitle",
+        "type": "tab",
+        "label": "Chart Subtitle",
+        "children": [
+          {
+            "$formkit": "text",
+            "name": "text",
+            "type": "text",
+            "label": "Chart Subtitle",
+            "validation": "(500)length:0,200"
+          },
+          {
+            "$formkit": "group",
+            "name": "style",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "select",
+                "name": "fontSize",
+                "type": "select",
+                "label": "Chart Subtitle Font Size",
+                "options": [
+                  "8",
+                  "10",
+                  "12",
+                  "14",
+                  "16",
+                  "18",
+                  "20",
+                  "22",
+                  "24",
+                  "26",
+                  "28",
+                  "30",
+                  "32",
+                  "34"
+                ],
+                "valueType": "number"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "plotOptions",
+        "type": "tab",
+        "label": "Network Graph Chart",
+        "children": [
+          {
+            "$formkit": "group",
+            "name": "series",
+            "type": "group",
+            "object": true,
+            "children": [
+              {
+                "$formkit": "group",
+                "name": "dataLabels",
+                "type": "group",
+                "object": true,
+                "children": [
+                  {
+                    "$formkit": "checkbox",
+                    "name": "enabled",
+                    "type": "checkbox",
+                    "label": "Enable Data Labels"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "tooltip",
+        "type": "tab",
+        "label": "Tooltip",
+        "children": [
+          {
+            "$formkit": "checkbox",
+            "name": "enabled",
+            "type": "checkbox",
+            "label": "Enable Tooltip"
+          }
+        ]
+      }
+    ]
+  }
+}
