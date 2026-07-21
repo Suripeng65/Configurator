@@ -32,6 +32,9 @@
           <option value="FlexDropdown">Dropdown Filter (leaf)</option>
           <option value="ModalSelector">Modal Selector (leaf)</option>
           <option value="ValidationMessage">Validation Message</option>
+          <optgroup v-if="adaptComponents.length" label="Adapt Library">
+            <option v-for="c in adaptComponents" :key="c.key" :value="c.key">{{ c.label }}</option>
+          </optgroup>
         </select>
         <input
           v-model="newSectionName"
@@ -69,6 +72,9 @@ const NEEDS_DIM_TYPES = ['FlexDropdown', 'ModalSelector', 'StratificationToggle'
 
 const store = useTemplateStore()
 
+const adaptLibrary    = computed(() => store.template?.layout?.adaptLibrary ?? {})
+const adaptComponents = computed(() => Object.entries(adaptLibrary.value).map(([k, d]) => ({ key: k, label: d.label || k, fields: d.fields ?? [] })))
+
 const layout = computed(() => store.template?.layout ?? {})
 const leftPanel = computed(() => layout.value?.viz?.['left-panel'] ?? {})
 const tabKey = computed(() => leftPanel.value?.tabs?.[0] ?? 'tab-one')
@@ -92,8 +98,11 @@ const newSectionType = ref('LayoutSection')
 const newSectionName = ref('')
 const newSectionDim  = ref('')
 
-const isLeaf   = computed(() => LEAVES.includes(newSectionType.value))
-const needsDim = computed(() => NEEDS_DIM_TYPES.includes(newSectionType.value))
+const isAdaptType = computed(() => !!adaptLibrary.value[newSectionType.value])
+const isLeaf      = computed(() => LEAVES.includes(newSectionType.value) || isAdaptType.value)
+const needsDim    = computed(() => NEEDS_DIM_TYPES.includes(newSectionType.value))
+
+const TYPE_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
 
 function buildConfig(type, name, dim) {
   const label = name.trim() || 'New Item'
@@ -106,7 +115,19 @@ function buildConfig(type, name, dim) {
     ModalSelector:         { component: 'ModalSelector',    label,               dim: d },
     ValidationMessage:     { component: 'ValidationMessage', ruleName: name.trim() || '' },
   }
-  return templates[type] ?? { component: type }
+  if (templates[type]) return templates[type]
+
+  const adaptDef = adaptLibrary.value[type]
+  if (adaptDef) {
+    const config = { component: type }
+    if (label) config.label = label
+    for (const field of adaptDef.fields ?? []) {
+      config[field.key] = field.default !== undefined ? field.default : (TYPE_DEFAULTS[field.type] ?? '')
+    }
+    return config
+  }
+
+  return { component: type }
 }
 
 function addSection() {

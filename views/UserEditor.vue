@@ -1,7 +1,7 @@
 <template>
   <div class="user-editor">
     <nav class="user-nav">
-      <div class="nav-brand">User Mode</div>
+      <div class="nav-brand">Layout</div>
       <button
         v-for="s in sections"
         :key="s.key"
@@ -15,25 +15,25 @@
     </nav>
 
     <div class="user-content">
-      <MainTabsPanel v-if="active === 'tabs'" />
-      <WorkspacePanel v-else-if="active === 'workspace'" />
-      <DatasourcesPanel v-else-if="active === 'datasources'" />
+      <MainTabsPanel     v-if="active === 'tabs'" />
+      <WorkspacePanel    v-else-if="active === 'workspace'" />
+      <AdaptLibraryPanel v-else-if="active === 'adapt'" />
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
-import MainTabsPanel from '@src/components/user/MainTabsPanel.vue'
-import WorkspacePanel from '@src/components/user/WorkspacePanel.vue'
-import DatasourcesPanel from '@src/components/user/DatasourcesPanel.vue'
+import MainTabsPanel      from '@src/components/user/MainTabsPanel.vue'
+import WorkspacePanel     from '@src/components/user/WorkspacePanel.vue'
+import AdaptLibraryPanel  from '@src/components/user/AdaptLibraryPanel.vue'
 
 const active = ref('tabs')
 
 const sections = [
-  { key: 'tabs',        icon: '📊', label: 'Visualization Tabs',  desc: 'Add, remove, reorder chart tabs' },
-  { key: 'workspace',   icon: '🔧', label: 'Monitor Parameters',   desc: 'Edit filter sections & options' },
-  { key: 'datasources', icon: '🗄️', label: 'Datasources',          desc: 'Metrics, rules, data sources' },
+  { key: 'tabs',      icon: '📊', label: 'Visualization Tabs',      desc: 'Add, remove, reorder chart tabs' },
+  { key: 'workspace', icon: '🔧', label: 'Monitor Parameters',       desc: 'Edit filter sections & options' },
+  { key: 'adapt',     icon: '🧩', label: 'Adapt Library Components', desc: 'Define reusable component types' },
 ]
 </script>
 

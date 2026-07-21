@@ -82,6 +82,9 @@
                 <span class="cell-id-label">{{ cellId(ri, ci) }}</span>
                 <select v-model="cell.chart" class="cell-chart-select" @click.stop>
                   <option v-for="c in CHART_TYPES" :key="c.v" :value="c.v">{{ c.l }}</option>
+                  <optgroup v-if="adaptChartTypes.length" label="Adapt Library">
+                    <option v-for="c in adaptChartTypes" :key="c.v" :value="c.v">{{ c.l }}</option>
+                  </optgroup>
                 </select>
                 <div class="cell-footer">
                   <label class="size-label">
@@ -146,6 +149,11 @@ const CHART_LABELS = {
 
 const store = useTemplateStore()
 
+const adaptLibrary    = computed(() => store.template?.layout?.adaptLibrary ?? {})
+const adaptChartTypes = computed(() =>
+  Object.entries(adaptLibrary.value).map(([v, def]) => ({ v, l: def.label || v }))
+)
+
 const CHART_TYPES = [
   { v: 'BarChart',         l: 'Bar Chart' },
   { v: 'LineChart',        l: 'Line Chart' },
@@ -191,11 +199,15 @@ const orphanTabKeys = computed(() => {
 function chartTypeLabel(tabKey) {
   const tab = mainPanel.value?.[tabKey]
   if (!tab?.contents) return ''
+  const allLabels = {
+    ...CHART_LABELS,
+    ...Object.fromEntries(Object.entries(adaptLibrary.value).map(([k, d]) => [k, d.label || k]))
+  }
   const charts = []
   const walk = (arr) => {
     if (!Array.isArray(arr)) return
     arr.forEach(c => {
-      if (c.component && CHART_LABELS[c.component]) charts.push(CHART_LABELS[c.component])
+      if (c.component && allLabels[c.component]) charts.push(allLabels[c.component])
       walk(c.contents)
     })
   }
@@ -288,10 +300,20 @@ function buildGridTabConfig(title) {
     }),
   }))
 
+  const FIELD_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
   const contents = []
   gridRows.value.forEach((row, ri) => {
     row.cells.forEach((cell, ci) => {
-      contents.push({ cell: cellId(ri, ci), component: cell.chart, datasourceName: '/' })
+      const cellConfig = { cell: cellId(ri, ci), component: cell.chart, datasourceName: '/' }
+      const adaptDef = adaptLibrary.value[cell.chart]
+      if (adaptDef) {
+        for (const field of adaptDef.fields ?? []) {
+          if (!(field.key in cellConfig)) {
+            cellConfig[field.key] = field.default !== undefined ? field.default : (FIELD_DEFAULTS[field.type] ?? '')
+          }
+        }
+      }
+      contents.push(cellConfig)
     })
   })
 

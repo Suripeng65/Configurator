@@ -1,14 +1,9 @@
 <script setup lang="ts">
-import {inject } from 'vue'
-import {BFormGroup, BFormInput} from "bootstrap-vue-next";
-import HistoryFormGroup from "@src/components/HistoryFormGroup.vue";
-import IdentifierFormGroup from "@src/components/IdentifierFormGroup.vue";
-
-const meta = inject('meta')
+import DatasourcesPanel from '@src/components/user/DatasourcesPanel.vue'
 </script>
 
 <template>
-
+  <DatasourcesPanel />
 </template>
 
 <style scoped>
