@@ -9,96 +9,85 @@
     <div class="pane-divider" />
 
     <!-- Right: visualization tabs -->
-    <div class="right-pane">
-
-      <!-- Horizontal tab bar -->
-      <div class="tab-bar">
-        <button
-          v-for="tab in tabList"
-          :key="tab.key"
-          class="tab-pill"
-          :class="{ active: activeTab === tab.key }"
-          @click="selectTab(tab.key)"
-        >
+    <BTabs
+      v-model="activeTabIndex"
+      class="right-pane"
+      nav-class="layout-tab-nav"
+      content-class="layout-tab-content"
+    >
+      <BTab v-for="(tab, i) in tabList" :key="tab.key">
+        <template #title>
           <input
             v-if="editingTab === tab.key"
             v-model="editTitle"
             v-focus
             class="tab-title-input"
+            @click.stop
+            @mousedown.stop
             @blur="commitEdit"
             @keyup.enter="commitEdit"
             @keyup.escape="cancelEdit"
-            @mousedown.stop
-            @click.stop
           />
           <span
             v-else
-            class="tab-label"
-            :title="activeTab === tab.key ? 'Double-click to rename' : ''"
             @dblclick.stop="startEdit(tab.key, tab.title)"
           >{{ tab.title }}</span>
           <span
-            v-if="activeTab === tab.key && editingTab !== tab.key"
-            class="tab-close"
+            v-if="activeTabIndex === i && editingTab !== tab.key"
+            class="tab-close ms-2"
             @click.stop="deleteTab(tab.key)"
             title="Delete tab"
           >×</span>
-        </button>
-        <button class="add-tab-pill" @click="openNewForm">+ Tab</button>
-      </div>
+        </template>
 
-      <!-- Content area -->
-      <div class="tab-content">
+        <TabContent :key="tab.key" :tabKey="tab.key" />
+      </BTab>
 
-        <!-- New tab form -->
-        <div v-if="showNewForm" class="new-tab-form">
-          <h3 class="new-tab-heading">New Tab</h3>
-          <div class="new-tab-row">
-            <label class="new-tab-label">Title</label>
-            <input
-              v-model="newTitle"
-              class="new-tab-input"
-              placeholder="e.g. Claims Overview"
-              @input="syncKey"
-              @keyup.enter="createTab"
-            />
-          </div>
-          <div class="new-tab-row">
-            <label class="new-tab-label">Key <span class="new-tab-hint">(no spaces)</span></label>
-            <input
-              v-model="newKey"
-              class="new-tab-input"
-              style="font-family: monospace"
-              placeholder="e.g. claims_overview"
-              @input="keyManuallyEdited = true"
-              @keyup.enter="createTab"
-            />
-          </div>
-          <p v-if="newError" class="new-tab-error">{{ newError }}</p>
-          <div class="new-tab-actions">
-            <button class="btn-create" @click="createTab">Create Tab</button>
-            <button class="btn-cancel-new" @click="cancelNew">Cancel</button>
-          </div>
-        </div>
+      <template #tabs-end>
+        <li class="nav-item d-flex align-items-center">
+          <button class="add-tab-btn" @click="showNewModal = true">+ Tab</button>
+        </li>
+      </template>
+    </BTabs>
 
-        <!-- Active tab content -->
-        <TabContent
-          v-else-if="activeTab"
-          :key="activeTab"
-          :tabKey="activeTab"
-        />
+    <!-- New tab modal -->
+    <BModal
+      v-model="showNewModal"
+      title="New Tab"
+      ok-title="Create"
+      ok-variant="primary"
+      cancel-variant="outline-secondary"
+      @ok.prevent="createTab"
+      @hidden="resetForm"
+    >
+      <BForm @submit.prevent="createTab">
+        <BFormGroup label="Title" label-for="new-tab-title">
+          <BFormInput
+            id="new-tab-title"
+            v-model="newTitle"
+            placeholder="e.g. Claims Overview"
+            @input="syncKey"
+          />
+        </BFormGroup>
+        <BFormGroup label="Key" label-for="new-tab-key" description="No spaces — used as the config identifier.">
+          <BFormInput
+            id="new-tab-key"
+            v-model="newKey"
+            placeholder="e.g. claims_overview"
+            style="font-family: monospace"
+            @input="keyManuallyEdited = true"
+          />
+        </BFormGroup>
+        <p v-if="newError" class="text-danger small mt-2 mb-0">{{ newError }}</p>
+      </BForm>
+    </BModal>
 
-        <div v-else class="empty-hint">
-          No tabs yet — click <strong>+ Tab</strong> to create one.
-        </div>
-
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, inject } from 'vue'
+import { ref, computed, watch, inject, nextTick } from 'vue'
+import { BTabs, BTab, BModal, BForm, BFormGroup, BFormInput } from 'bootstrap-vue-next'
 import { useLayoutEditor } from '@src/composables/useLayoutEditor.js'
 import WorkspacePanel from '@src/components/user/WorkspacePanel.vue'
 import TabContent from '@src/components/user/TabContent.vue'
@@ -117,24 +106,20 @@ const tabList = computed(() => {
     .map(k => ({ key: k, title: mainPanel.value[k]?.title ?? k }))
 })
 
-// Auto-select first tab when data loads
-const activeTab = ref(null)
-watch(tabList, (list) => {
-  if (!activeTab.value && list.length) activeTab.value = list[0].key
-}, { immediate: true })
+// ── Active tab (index-based for BTabs) ───────────────────────────────────────
+const activeTabIndex = ref(0)
 
-function selectTab(key) {
-  cancelEdit()
-  showNewForm.value = false
-  activeTab.value = key
-}
+watch(tabList, (list) => {
+  if (activeTabIndex.value >= list.length) {
+    activeTabIndex.value = Math.max(0, list.length - 1)
+  }
+}, { immediate: true })
 
 // ── Inline title editing ──────────────────────────────────────────────────────
 const editingTab = ref(null)
 const editTitle  = ref('')
 
 function startEdit(key, title) {
-  activeTab.value  = key
   editingTab.value = key
   editTitle.value  = title
 }
@@ -153,6 +138,7 @@ function cancelEdit() { editingTab.value = null }
 function deleteTab(key) {
   const label = mainPanel.value?.[key]?.title ?? key
   if (!confirm(`Delete tab "${label}"?`)) return
+
   const arr  = mainPanel.value?.['tab-array'] ?? []
   const idx  = arr.indexOf(key)
   if (idx >= 0) deleteNode(['viz', 'main-panel', 'tab-array', idx])
@@ -160,13 +146,16 @@ function deleteTab(key) {
   const tIdx = tabs.indexOf(key)
   if (tIdx >= 0) deleteNode(['viz', 'main-panel', 'tabs', tIdx])
   deleteNode(['viz', 'main-panel', key])
-  if (activeTab.value === key) {
-    activeTab.value = tabList.value.find(t => t.key !== key)?.key ?? null
-  }
+
+  nextTick(() => {
+    if (activeTabIndex.value >= tabList.value.length) {
+      activeTabIndex.value = Math.max(0, tabList.value.length - 1)
+    }
+  })
 }
 
 // ── New tab ───────────────────────────────────────────────────────────────────
-const showNewForm       = ref(false)
+const showNewModal      = ref(false)
 const newTitle          = ref('')
 const newKey            = ref('')
 const newError          = ref('')
@@ -178,11 +167,6 @@ function toKey(str) {
 
 function syncKey() {
   if (!keyManuallyEdited.value) newKey.value = toKey(newTitle.value)
-}
-
-function openNewForm() {
-  showNewForm.value = true
-  activeTab.value = null
 }
 
 function createTab() {
@@ -215,17 +199,15 @@ function createTab() {
   addChild(['viz', 'main-panel', 'tabs'], null, 'string')
   setValue(['viz', 'main-panel', 'tabs', tabsLen], key)
 
-  activeTab.value = key
-  cancelNew()
+  showNewModal.value = false
+  nextTick(() => { activeTabIndex.value = tabList.value.length - 1 })
 }
 
-function cancelNew() {
-  showNewForm.value       = false
+function resetForm() {
   newTitle.value          = ''
   newKey.value            = ''
   newError.value          = ''
   keyManuallyEdited.value = false
-  if (!activeTab.value && tabList.value.length) activeTab.value = tabList.value[0].key
 }
 </script>
 
@@ -251,7 +233,7 @@ function cancelNew() {
   flex-shrink: 0;
 }
 
-/* ── Right pane ── */
+/* ── BTabs as right pane ── */
 .right-pane {
   flex: 1;
   display: flex;
@@ -260,39 +242,50 @@ function cancelNew() {
   min-width: 0;
 }
 
-/* ── Tab bar ── */
-.tab-bar {
-  display: flex;
-  align-items: stretch;
-  background: #fff;
-  border-bottom: 2px solid #e5e7eb;
-  flex-shrink: 0;
-  overflow-x: auto;
+.right-pane :deep(.layout-tab-content) {
+  flex: 1;
+  overflow: auto;
+  background: #f8f9fb;
 }
 
-.tab-pill {
+.right-pane :deep(.tab-pane) {
+  height: 100%;
+}
+
+/* ── Tab nav ── */
+.right-pane :deep(.layout-tab-nav) {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  border-bottom: 2px solid #e5e7eb;
+  background: #fff;
+}
+
+.right-pane :deep(.layout-tab-nav .nav-link) {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 16px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  margin-bottom: -2px;
+  white-space: nowrap;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0 18px;
-  min-height: 42px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #6b7280;
-  background: none;
-  border: none;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -2px;
-  white-space: nowrap;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: color 0.12s, border-color 0.12s, background 0.1s;
 }
-.tab-pill:hover:not(.active) { color: #374151; background: #f9fafb; }
-.tab-pill.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+.right-pane :deep(.layout-tab-nav .nav-link:hover) {
+  color: #374151;
+  background: #f9fafb;
+  border-color: transparent;
+}
+.right-pane :deep(.layout-tab-nav .nav-link.active) {
+  color: #4f46e5;
+  background: transparent;
+  border-bottom-color: #4f46e5;
+}
 
-.tab-label { user-select: none; }
-
+/* ── Tab title slot content ── */
 .tab-title-input {
   border: 1px solid #c4b5fd;
   border-radius: 4px;
@@ -302,11 +295,11 @@ function cancelNew() {
   color: #4f46e5;
   background: #f5f3ff;
   outline: none;
-  width: 130px;
+  width: 120px;
 }
 
 .tab-close {
-  font-size: 15px;
+  font-size: 14px;
   color: #d1d5db;
   line-height: 1;
   padding: 1px 3px;
@@ -316,78 +309,16 @@ function cancelNew() {
 }
 .tab-close:hover { color: #dc2626; background: #fee2e2; }
 
-.add-tab-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 0 16px;
-  min-height: 42px;
-  font-size: 12px;
-  color: #9ca3af;
+/* ── Add tab button ── */
+.add-tab-btn {
   background: none;
   border: none;
+  font-size: 12px;
+  color: #9ca3af;
+  padding: 0 14px;
+  height: 100%;
   cursor: pointer;
   white-space: nowrap;
-  flex-shrink: 0;
-  margin-bottom: -2px;
-  border-bottom: 2px solid transparent;
 }
-.add-tab-pill:hover { color: #4f46e5; background: #f5f3ff; }
-
-/* ── Content area ── */
-.tab-content {
-  flex: 1;
-  overflow: auto;
-  background: #f8f9fb;
-}
-
-/* ── New tab form ── */
-.new-tab-form {
-  max-width: 440px;
-  margin: 40px auto;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 28px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.new-tab-heading { font-size: 15px; font-weight: 700; color: #111; margin: 0; }
-
-.new-tab-row { display: flex; flex-direction: column; gap: 5px; }
-
-.new-tab-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #6b7280;
-}
-.new-tab-hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: #9ca3af; }
-
-.new-tab-input {
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-size: 13px;
-  background: #fff;
-}
-.new-tab-input:focus { border-color: #6366f1; outline: none; }
-
-.new-tab-error { color: #dc2626; font-size: 12px; margin: 0; }
-
-.new-tab-actions { display: flex; gap: 8px; padding-top: 4px; }
-.btn-create { background: #4f46e5; color: #fff; font-size: 13px; font-weight: 500; padding: 8px 20px; border-radius: 6px; }
-.btn-create:hover { background: #4338ca; }
-.btn-cancel-new { background: none; color: #6b7280; font-size: 13px; padding: 8px 14px; border-radius: 6px; border: 1px solid #e5e7eb; }
-.btn-cancel-new:hover { background: #f3f4f6; }
-
-.empty-hint {
-  padding: 60px;
-  text-align: center;
-  color: #9ca3af;
-  font-size: 14px;
-  line-height: 1.8;
-}
+.add-tab-btn:hover { color: #4f46e5; background: #f5f3ff; }
 </style>
