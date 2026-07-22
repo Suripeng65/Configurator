@@ -1,9 +1,67 @@
 <template>
   <div class="layout-editor">
 
-    <!-- Left: monitor parameters -->
+    <!-- Left: monitor parameters (inlined) -->
     <aside class="left-pane">
-      <WorkspacePanel />
+      <div class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">Monitor Parameters</h2>
+          <p class="panel-subtitle">
+            Edit the left-panel filter sections. Double-click any section name to rename it.
+            Expand a section to add filters, dropdowns, or nested groups.
+          </p>
+        </div>
+
+        <div class="sections-list">
+          <div v-if="!topSections.length && !showAddForm" class="empty-state">
+            No workspace filter sections found.<br />
+            <button class="add-section-btn" @click="showAddForm = true">+ Add first section</button>
+          </div>
+
+          <WorkspaceSection
+            v-for="(section, idx) in topSections"
+            :key="idx"
+            :item="section"
+            :path="[...monitorContentsPath, idx]"
+            :depth="0"
+          />
+
+          <div v-if="showAddForm" class="add-section-form">
+            <select v-model="newSectionType" class="add-select">
+              <option value="LayoutSection">Layout Section (container)</option>
+              <option value="AccordionGroup">Accordion Group (container)</option>
+              <option value="AggregationAccordion">Aggregation Accordion (container)</option>
+              <option value="FlexDropdown">Dropdown Filter (leaf)</option>
+              <option value="ModalSelector">Modal Selector (leaf)</option>
+              <option value="ValidationMessage">Validation Message</option>
+              <optgroup v-if="adaptComponents.length" label="Adapt Library">
+                <option v-for="c in adaptComponents" :key="c.key" :value="c.key">{{ c.label }}</option>
+              </optgroup>
+            </select>
+            <input
+              v-model="newSectionName"
+              class="add-input"
+              :placeholder="isLeaf ? 'Label' : 'Section name'"
+              @keyup.enter="addSection"
+              @keyup.escape="cancelAdd"
+            />
+            <input
+              v-if="isLeaf && needsDim"
+              v-model="newSectionDim"
+              class="add-input add-input--dim"
+              placeholder="dimension key"
+              @keyup.enter="addSection"
+              @keyup.escape="cancelAdd"
+            />
+            <button class="btn-confirm" @click="addSection">Add</button>
+            <button class="btn-cancel" @click="cancelAdd">Cancel</button>
+          </div>
+
+          <button v-if="topSections.length && !showAddForm" class="add-section-btn" @click="showAddForm = true">
+            + Add section
+          </button>
+        </div>
+      </div>
     </aside>
 
     <div class="pane-divider" />
@@ -204,7 +262,7 @@
 import { ref, computed, watch, inject, nextTick } from 'vue'
 import { BTabs, BTab, BModal, BForm, BFormGroup, BFormInput, BFormSelect, BFormCheckbox, BInputGroup, BInputGroupText, BButton, BCard } from 'bootstrap-vue-next'
 import { useLayoutEditor } from '@src/composables/useLayoutEditor.js'
-import WorkspacePanel from '@src/components/user/WorkspacePanel.vue'
+import WorkspaceSection from '@src/components/user/WorkspaceSection.vue'
 
 const vFocus = { mounted: (el) => el.focus() }
 
@@ -486,6 +544,70 @@ function resetForm() {
   newError.value          = ''
   keyManuallyEdited.value = false
 }
+
+// ── Monitor Parameters (inlined from WorkspacePanel) ─────────────────────────
+const LEAVES         = ['FlexDropdown', 'ModalSelector', 'ValidationMessage', 'StratificationToggle', 'StratificationDropdown']
+const NEEDS_DIM_TYPES = ['FlexDropdown', 'ModalSelector', 'StratificationToggle', 'StratificationDropdown']
+
+const adaptComponents     = computed(() => Object.entries(adaptLibrary.value).map(([k, d]) => ({ key: k, label: d.label || k, fields: d.fields ?? [] })))
+const leftPanel           = computed(() => meta?.value?.layout?.viz?.['left-panel'] ?? {})
+const leftTabKey          = computed(() => leftPanel.value?.tabs?.[0] ?? 'tab-one')
+const leftTabContent      = computed(() => leftPanel.value[leftTabKey.value] ?? {})
+const monitorPanelIndex   = computed(() => (leftTabContent.value.contents ?? []).findIndex(c => c.component === 'MonitorPanel'))
+const monitorPanel        = computed(() => monitorPanelIndex.value >= 0 ? leftTabContent.value.contents[monitorPanelIndex.value] : null)
+const monitorContentsPath = computed(() => ['viz', 'left-panel', leftTabKey.value, 'contents', monitorPanelIndex.value, 'contents'])
+const topSections         = computed(() => monitorPanel.value?.contents ?? [])
+
+const showAddForm    = ref(false)
+const newSectionType = ref('LayoutSection')
+const newSectionName = ref('')
+const newSectionDim  = ref('')
+
+const isAdaptType = computed(() => !!adaptLibrary.value[newSectionType.value])
+const isLeaf      = computed(() => LEAVES.includes(newSectionType.value) || isAdaptType.value)
+const needsDim    = computed(() => NEEDS_DIM_TYPES.includes(newSectionType.value))
+
+const TYPE_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
+
+function buildConfig(type, name, dim) {
+  const label = name.trim() || 'New Item'
+  const d = dim.trim()
+  const templates = {
+    LayoutSection:        { component: 'LayoutSection',    displayName: label,  collapsed: false, collapsible: true, contents: [] },
+    AccordionGroup:       { component: 'AccordionGroup',   groupName: label,    collapsedByDefault: false, contents: [] },
+    AggregationAccordion: { component: 'AggregationAccordion', displayName: label, contents: [] },
+    FlexDropdown:         { component: 'FlexDropdown',     label,               dim: d, options: [] },
+    ModalSelector:        { component: 'ModalSelector',    label,               dim: d },
+    ValidationMessage:    { component: 'ValidationMessage', ruleName: name.trim() || '' },
+  }
+  if (templates[type]) return templates[type]
+  const adaptDef = adaptLibrary.value[type]
+  if (adaptDef) {
+    const config = { component: type }
+    if (label) config.label = label
+    for (const field of adaptDef.fields ?? []) {
+      config[field.key] = field.default !== undefined ? field.default : (TYPE_DEFAULTS[field.type] ?? '')
+    }
+    return config
+  }
+  return { component: type }
+}
+
+function addSection() {
+  if (monitorPanelIndex.value < 0) return
+  const newIdx = topSections.value.length
+  const config = buildConfig(newSectionType.value, newSectionName.value, newSectionDim.value)
+  addChild(monitorContentsPath.value, null, 'object')
+  setValue([...monitorContentsPath.value, newIdx], config)
+  cancelAdd()
+}
+
+function cancelAdd() {
+  showAddForm.value    = false
+  newSectionType.value = 'LayoutSection'
+  newSectionName.value = ''
+  newSectionDim.value  = ''
+}
 </script>
 
 <style scoped>
@@ -630,4 +752,63 @@ function resetForm() {
 }
 /* ── Cell config ── */
 .cell-config { border: 1px solid #e5e7eb; border-radius: 6px; overflow: hidden; }
+
+/* ── Monitor Parameters (inlined from WorkspacePanel) ── */
+.panel { padding: 20px; }
+.panel-header { margin-bottom: 16px; }
+.panel-title  { font-size: 16px; font-weight: 700; color: #111; margin: 0; }
+.panel-subtitle { font-size: 12px; color: #6b7280; margin-top: 4px; line-height: 1.5; margin-bottom: 0; }
+
+.sections-list { display: flex; flex-direction: column; gap: 12px; }
+
+.add-section-btn {
+  align-self: flex-start;
+  background: none;
+  border: 2px dashed #d1d5db;
+  color: #6b7280;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  width: 100%;
+  transition: all 0.15s;
+}
+.add-section-btn:hover { border-color: #6366f1; color: #4f46e5; background: #f5f3ff; }
+
+.add-section-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #f5f3ff;
+  border: 1px solid #c4b5fd;
+  border-radius: 8px;
+}
+
+.add-select {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.add-input {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  background: #fff;
+  min-width: 160px;
+  flex: 1;
+}
+.add-input--dim { min-width: 120px; flex: 0 0 auto; font-family: monospace; font-size: 12px; }
+.add-input:focus { border-color: #6366f1; outline: none; }
+
+.btn-confirm { background: #4f46e5; color: #fff; padding: 6px 16px; border-radius: 6px; font-size: 13px; }
+.btn-confirm:hover { background: #4338ca; }
+.btn-cancel { background: none; color: #6b7280; padding: 6px 10px; font-size: 13px; }
+
+.empty-state { color: #9ca3af; padding: 40px; text-align: center; line-height: 2; }
 </style>
