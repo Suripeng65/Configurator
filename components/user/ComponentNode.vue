@@ -5,10 +5,11 @@
     <div class="cn-header" @click="expanded = !expanded">
       <span class="cn-arrow" :class="{ expanded }">▶</span>
 
-      <input
+      <BFormInput
         v-if="editingName"
         ref="nameInputEl"
         v-model="nameDraft"
+        size="sm"
         class="cn-name-input"
         @blur="commitName"
         @keyup.enter="commitName"
@@ -25,7 +26,7 @@
 
       <span class="cn-pill">{{ item.component }}</span>
 
-      <button class="cn-del" title="Remove" @click.stop="removeNode">✕</button>
+      <BButton variant="link" size="sm" class="cn-del p-0 ms-auto" title="Remove" @click.stop="removeNode">✕</BButton>
     </div>
 
     <!-- Body -->
@@ -42,78 +43,83 @@
           <span class="cn-flabel" :title="key">{{ key }}</span>
 
           <!-- boolean -->
-          <label v-if="typeof item[key] === 'boolean'" class="cn-bool">
-            <input type="checkbox" :checked="item[key]" @change="setField(key, $event.target.checked)" />
-            {{ item[key] ? 'true' : 'false' }}
-          </label>
+          <BFormCheckbox
+            v-if="typeof item[key] === 'boolean'"
+            class="cn-bool mb-0"
+            :model-value="item[key]"
+            @update:model-value="setField(key, $event)"
+          >{{ item[key] ? 'true' : 'false' }}</BFormCheckbox>
 
           <!-- number -->
-          <input
+          <BFormInput
             v-else-if="typeof item[key] === 'number'"
+            size="sm"
             type="number"
-            class="cn-finput"
-            :value="item[key]"
-            @change="setField(key, Number($event.target.value))"
+            :model-value="item[key]"
+            @update:model-value="setField(key, Number($event))"
           />
 
           <!-- flat array (strings / numbers) -->
-          <textarea
+          <BFormTextarea
             v-else-if="isFlatArray(item[key])"
-            class="cn-ftextarea"
-            :value="item[key].join('\n')"
+            size="sm"
+            :model-value="item[key].join('\n')"
             rows="3"
-            @change="setField(key, $event.target.value.split('\n').map(s => s.trim()).filter(Boolean))"
+            @update:model-value="setField(key, $event.split('\n').map(s => s.trim()).filter(Boolean))"
           />
 
-          <!-- object or array-of-objects → JSON -->
-          <textarea
+          <!-- object / array-of-objects → JSON -->
+          <BFormTextarea
             v-else-if="item[key] !== null && typeof item[key] === 'object'"
-            class="cn-ftextarea cn-ftextarea--json"
-            :value="JSON.stringify(item[key], null, 2)"
+            size="sm"
+            class="cn-ftextarea--json"
+            :model-value="JSON.stringify(item[key], null, 2)"
             rows="3"
-            @change="setFieldJson(key, $event.target.value)"
+            @update:model-value="setFieldJson(key, $event)"
           />
 
           <!-- string (default) -->
-          <input
+          <BFormInput
             v-else
-            class="cn-finput"
-            :class="{ 'cn-finput--mono': MONO_KEYS.has(key) }"
-            :value="item[key] ?? ''"
-            @change="setField(key, $event.target.value)"
+            size="sm"
+            :class="{ 'font-monospace': MONO_KEYS.has(key) }"
+            :model-value="item[key] ?? ''"
+            @update:model-value="setField(key, $event)"
           />
 
-          <button class="cn-fremove" title="Remove field" @click="removeField(key)">×</button>
+          <BButton variant="link" size="sm" class="cn-fremove p-0" title="Remove field" @click="removeField(key)">×</BButton>
         </div>
       </div>
 
       <!-- Add field form -->
       <div v-if="showAddField" class="cn-add-row">
-        <input
+        <BFormInput
           v-model="newFieldKey"
-          class="cn-af-key"
+          size="sm"
           placeholder="key"
+          class="font-monospace cn-af-key"
           @keyup.enter="commitAddField"
           @keyup.escape="cancelAddField"
         />
         <span class="cn-af-sep">:</span>
-        <input
+        <BFormInput
           v-model="newFieldValue"
-          class="cn-af-val"
+          size="sm"
           placeholder="value"
+          class="cn-af-flex"
           @keyup.enter="commitAddField"
           @keyup.escape="cancelAddField"
         />
-        <select v-model="newFieldType" class="cn-af-type">
+        <BFormSelect v-model="newFieldType" size="sm" class="cn-af-type">
           <option value="string">string</option>
           <option value="number">number</option>
           <option value="boolean">bool</option>
           <option value="array">string[]</option>
-        </select>
-        <button class="cn-ok" @click="commitAddField">Add</button>
-        <button class="cn-cancel" @click="cancelAddField">✕</button>
+        </BFormSelect>
+        <BButton variant="primary" size="sm" @click="commitAddField">Add</BButton>
+        <BButton variant="link" size="sm" class="text-secondary p-0" @click="cancelAddField">✕</BButton>
       </div>
-      <button v-else class="cn-add-field-btn" @click="showAddField = true">+ field</button>
+      <BButton v-else variant="outline-secondary" size="sm" class="cn-dashed-btn" @click="showAddField = true">+ field</BButton>
 
       <!-- Recursive children -->
       <div v-if="isContainer" class="cn-children">
@@ -126,24 +132,25 @@
         />
 
         <div v-if="showAddChild" class="cn-add-row cn-add-row--child">
-          <select v-model="newChildType" class="cn-af-select">
+          <BFormSelect v-model="newChildType" size="sm" class="cn-af-select">
             <option value="" disabled>Select component...</option>
             <optgroup v-for="g in componentsByGroup" :key="g.group" :label="GROUP_LABELS[g.group]">
               <option v-for="c in g.items" :key="c.key" :value="c.key">{{ c.label }}</option>
             </optgroup>
-          </select>
-          <input
+          </BFormSelect>
+          <BFormInput
             v-if="selectedChildDef?.nameKey"
             v-model="newChildName"
-            class="cn-af-val"
+            size="sm"
             :placeholder="selectedChildDef.nameKey"
+            class="cn-af-flex"
             @keyup.enter="commitAddChild"
             @keyup.escape="cancelAddChild"
           />
-          <button class="cn-ok" :disabled="!newChildType" @click="commitAddChild">Add</button>
-          <button class="cn-cancel" @click="cancelAddChild">✕</button>
+          <BButton variant="primary" size="sm" :disabled="!newChildType" @click="commitAddChild">Add</BButton>
+          <BButton variant="link" size="sm" class="text-secondary p-0" @click="cancelAddChild">✕</BButton>
         </div>
-        <button v-else class="cn-add-child-btn" @click="showAddChild = true">+ Add child</button>
+        <BButton v-else variant="outline-secondary" size="sm" class="cn-dashed-btn w-100 text-start" @click="showAddChild = true">+ Add child</BButton>
       </div>
 
     </div>
@@ -152,14 +159,12 @@
 
 <script setup>
 import { ref, computed, nextTick, inject } from 'vue'
+import { BButton, BFormInput, BFormSelect, BFormCheckbox, BFormTextarea } from 'bootstrap-vue-next'
 import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
 import { ADAPT_COMPONENTS } from '../AdaptComponents/index.js'
 
-// Keys whose values should render in a monospace input
 const MONO_KEYS = new Set(['dim', 'datasourceName', 'ruleName', 'id', 'cell'])
-// Priority order for picking the "display name" key
 const NAME_KEYS = ['displayName', 'groupName', 'label', 'title']
-// Keys rendered structurally, not as editable fields
 const SKIP_KEYS = new Set(['component', 'contents'])
 
 const FIELD_TYPE_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
@@ -175,16 +180,13 @@ const props = defineProps({
 const meta = inject('meta')
 const { setValue, deleteNode, addChild } = useLayoutEditor(meta)
 
-// ── Expand / collapse ─────────────────────────────────────────────────────────
 const expanded = ref(props.depth < 2)
 
-// ── Name ──────────────────────────────────────────────────────────────────────
 const nameKey = computed(() => NAME_KEYS.find(k => k in props.item) ?? null)
 const displayName = computed(() =>
   (nameKey.value ? props.item[nameKey.value] : null) || props.item.component || '?'
 )
 
-// ── Field list ────────────────────────────────────────────────────────────────
 const isContainer = computed(() => Array.isArray(props.item.contents))
 const fieldKeys   = computed(() =>
   Object.keys(props.item).filter(k => !SKIP_KEYS.has(k) && k !== nameKey.value)
@@ -335,16 +337,7 @@ function cancelAddChild() {
 .cn-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cn-name[title] { cursor: text; }
 
-.cn-name-input {
-  flex: 1;
-  border: 1px solid #6366f1;
-  border-radius: 4px;
-  padding: 2px 6px;
-  font-size: inherit;
-  font-weight: inherit;
-  background: #fff;
-  outline: none;
-}
+.cn-name-input { flex: 1; font-size: inherit; font-weight: inherit; }
 
 .cn-pill {
   font-size: 10px;
@@ -357,20 +350,8 @@ function cancelAddChild() {
   white-space: nowrap;
 }
 
-.cn-del {
-  width: 20px;
-  height: 20px;
-  background: none;
-  color: #d1d5db;
-  border-radius: 4px;
-  font-size: 11px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-.cn-del:hover { background: #fee2e2; color: #dc2626; }
+.cn-del { color: #d1d5db !important; }
+.cn-del:hover { color: #dc2626 !important; background: #fee2e2 !important; border-radius: 4px; }
 
 /* ── Body ── */
 .cn-body {
@@ -410,58 +391,15 @@ function cancelAddChild() {
   font-family: monospace;
 }
 
-.cn-bool { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #374151; flex: 1; }
+.cn-bool { flex: 1; }
 
-.cn-finput {
-  flex: 1;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  padding: 3px 6px;
-  font-size: 12px;
-  background: #fff;
-  min-width: 0;
-}
-.cn-finput:focus { border-color: #6366f1; outline: none; }
-.cn-finput--mono { font-family: monospace; font-size: 11px; }
+.cn-fremove { color: #d1d5db !important; font-size: 15px; line-height: 1; }
+.cn-fremove:hover { color: #dc2626 !important; }
 
-.cn-ftextarea {
-  flex: 1;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  padding: 4px 6px;
-  font-size: 11px;
-  font-family: monospace;
-  resize: vertical;
-  background: #fff;
-  min-height: 52px;
-  min-width: 0;
-}
-.cn-ftextarea:focus { border-color: #6366f1; outline: none; }
-.cn-ftextarea--json { background: #1e1e2e; color: #cdd6f4; font-size: 10px; }
+/* ── JSON textarea ── */
+.cn-ftextarea--json { background: #1e1e2e !important; color: #cdd6f4 !important; font-size: 10px; font-family: monospace; }
 
-.cn-fremove {
-  background: none;
-  color: #d1d5db;
-  font-size: 15px;
-  padding: 0 2px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-.cn-fremove:hover { color: #dc2626; }
-
-/* ── Add field / child inline rows ── */
-.cn-add-field-btn {
-  align-self: flex-start;
-  background: none;
-  border: 1px dashed #e5e7eb;
-  color: #9ca3af;
-  padding: 3px 10px;
-  border-radius: 5px;
-  font-size: 11px;
-  transition: all 0.12s;
-}
-.cn-add-field-btn:hover { border-color: #6366f1; color: #4f46e5; background: #f5f3ff; }
-
+/* ── Add rows ── */
 .cn-add-row {
   display: flex;
   flex-wrap: wrap;
@@ -474,71 +412,15 @@ function cancelAddChild() {
 }
 .cn-add-row--child { background: #eff6ff; border-color: #bfdbfe; }
 
-.cn-af-select {
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  padding: 3px 6px;
-  font-size: 11px;
-  background: #fff;
-  cursor: pointer;
-  flex-shrink: 0;
-  max-width: 180px;
-}
-.cn-af-select:focus { border-color: #6366f1; outline: none; }
-
-.cn-af-key {
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  padding: 3px 6px;
-  font-size: 11px;
-  background: #fff;
-  font-family: monospace;
-  width: 80px;
-  flex-shrink: 0;
-}
-.cn-af-key--wide { width: 160px; }
-.cn-af-key:focus { border-color: #6366f1; outline: none; }
-
 .cn-af-sep { color: #6b7280; flex-shrink: 0; font-size: 12px; }
+.cn-af-key  { width: 80px !important; flex-shrink: 0 !important; }
+.cn-af-flex { flex: 1; min-width: 80px; }
+.cn-af-type { width: auto !important; flex-shrink: 0 !important; }
+.cn-af-select { max-width: 180px; flex-shrink: 0; }
 
-.cn-af-val {
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  padding: 3px 6px;
-  font-size: 11px;
-  background: #fff;
-  flex: 1;
-  min-width: 80px;
-}
-.cn-af-val:focus { border-color: #6366f1; outline: none; }
-
-.cn-af-type {
-  border: 1px solid #d1d5db;
-  border-radius: 4px;
-  padding: 3px 5px;
-  font-size: 11px;
-  background: #fff;
-  flex-shrink: 0;
-  cursor: pointer;
-}
-
-.cn-ok {
-  background: #4f46e5;
-  color: #fff;
-  font-size: 11px;
-  padding: 3px 10px;
-  border-radius: 4px;
-  flex-shrink: 0;
-}
-.cn-ok:hover { background: #4338ca; }
-
-.cn-cancel {
-  background: none;
-  color: #9ca3af;
-  font-size: 13px;
-  padding: 2px 5px;
-}
-.cn-cancel:hover { color: #374151; }
+/* ── Dashed outline buttons ── */
+.cn-dashed-btn { border-style: dashed !important; font-size: 11px; }
+.cn-dashed-btn.w-100 { font-size: 12px; text-align: left; }
 
 /* ── Children ── */
 .cn-children {
@@ -547,18 +429,4 @@ function cancelAddChild() {
   gap: 4px;
   padding-top: 4px;
 }
-
-.cn-add-child-btn {
-  align-self: flex-start;
-  background: none;
-  border: 1px dashed #d1d5db;
-  color: #9ca3af;
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  width: 100%;
-  text-align: left;
-  transition: all 0.12s;
-}
-.cn-add-child-btn:hover { border-color: #6366f1; color: #4f46e5; background: #f5f3ff; }
 </style>
