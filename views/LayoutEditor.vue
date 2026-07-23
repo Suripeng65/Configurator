@@ -18,7 +18,7 @@
             <button class="add-section-btn" @click="showAddForm = true">+ Add first section</button>
           </div>
 
-          <WorkspaceSection
+          <ComponentNode
             v-for="(section, idx) in topSections"
             :key="idx"
             :item="section"
@@ -262,7 +262,7 @@
 import { ref, computed, watch, inject, nextTick } from 'vue'
 import { BTabs, BTab, BModal, BForm, BFormGroup, BFormInput, BFormSelect, BFormCheckbox, BInputGroup, BInputGroupText, BButton, BCard } from 'bootstrap-vue-next'
 import { useLayoutEditor } from '@src/composables/useLayoutEditor.js'
-import WorkspaceSection from '@src/components/user/WorkspaceSection.vue'
+import ComponentNode from '@src/components/user/ComponentNode.vue'
 
 const vFocus = { mounted: (el) => el.focus() }
 
