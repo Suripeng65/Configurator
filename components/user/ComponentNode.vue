@@ -126,21 +126,21 @@
         />
 
         <div v-if="showAddChild" class="cn-add-row cn-add-row--child">
+          <select v-model="newChildType" class="cn-af-select">
+            <option value="" disabled>Select component...</option>
+            <optgroup v-for="g in componentsByGroup" :key="g.group" :label="GROUP_LABELS[g.group]">
+              <option v-for="c in g.items" :key="c.key" :value="c.key">{{ c.label }}</option>
+            </optgroup>
+          </select>
           <input
-            v-model="newChildType"
-            class="cn-af-key cn-af-key--wide"
-            placeholder="component type"
-            @keyup.enter="commitAddChild"
-            @keyup.escape="cancelAddChild"
-          />
-          <input
+            v-if="selectedChildDef?.nameKey"
             v-model="newChildName"
             class="cn-af-val"
-            placeholder="display name (optional)"
+            :placeholder="selectedChildDef.nameKey"
             @keyup.enter="commitAddChild"
             @keyup.escape="cancelAddChild"
           />
-          <button class="cn-ok" @click="commitAddChild">Add</button>
+          <button class="cn-ok" :disabled="!newChildType" @click="commitAddChild">Add</button>
           <button class="cn-cancel" @click="cancelAddChild">✕</button>
         </div>
         <button v-else class="cn-add-child-btn" @click="showAddChild = true">+ Add child</button>
@@ -153,6 +153,7 @@
 <script setup>
 import { ref, computed, nextTick, inject } from 'vue'
 import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
+import { ADAPT_COMPONENTS } from '../AdaptComponents/index.js'
 
 // Keys whose values should render in a monospace input
 const MONO_KEYS = new Set(['dim', 'datasourceName', 'ruleName', 'id', 'cell'])
@@ -160,8 +161,10 @@ const MONO_KEYS = new Set(['dim', 'datasourceName', 'ruleName', 'id', 'cell'])
 const NAME_KEYS = ['displayName', 'groupName', 'label', 'title']
 // Keys rendered structurally, not as editable fields
 const SKIP_KEYS = new Set(['component', 'contents'])
-// Component types that get an empty contents[] on creation
-const CONTAINER_TYPES = new Set(['LayoutSection', 'AccordionGroup', 'AggregationAccordion', 'MonitorPanel'])
+
+const FIELD_TYPE_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
+const GROUP_LABELS = { container: 'Containers', filter: 'Filters', other: 'Other', chart: 'Charts' }
+const GROUP_ORDER  = ['container', 'filter', 'other', 'chart']
 
 const props = defineProps({
   item:  { type: Object, required: true },
@@ -255,17 +258,35 @@ const showAddChild = ref(false)
 const newChildType = ref('')
 const newChildName = ref('')
 
-function commitAddChild() {
-  const type = newChildType.value.trim()
-  if (!type) return
-  const name   = newChildName.value.trim()
-  const newIdx = (props.item.contents ?? []).length
-  const config = { component: type }
-  if (name) {
-    if (['FlexDropdown', 'ModalSelector'].includes(type)) config.label = name
-    else config.displayName = name
+const componentsByGroup = computed(() => {
+  const groups = {}
+  for (const [key, def] of Object.entries(ADAPT_COMPONENTS)) {
+    const g = def.group || 'other'
+    if (!groups[g]) groups[g] = []
+    groups[g].push({ key, label: def.label || key })
   }
-  if (CONTAINER_TYPES.has(type)) config.contents = []
+  return GROUP_ORDER.filter(g => groups[g]).map(g => ({ group: g, items: groups[g] }))
+})
+
+const selectedChildDef = computed(() => ADAPT_COMPONENTS[newChildType.value] ?? null)
+
+function buildFromDef(type, name) {
+  const def = ADAPT_COMPONENTS[type]
+  if (!def) return { component: type }
+  const config = { component: type }
+  for (const field of def.fields ?? []) {
+    config[field.key] = field.default !== undefined ? field.default : (FIELD_TYPE_DEFAULTS[field.type] ?? '')
+  }
+  if (name && def.nameKey) config[def.nameKey] = name
+  if (def.container) config.contents = []
+  return config
+}
+
+function commitAddChild() {
+  const type = newChildType.value
+  if (!type) return
+  const newIdx = (props.item.contents ?? []).length
+  const config = buildFromDef(type, newChildName.value.trim())
   addChild([...props.path, 'contents'], null, 'object')
   setValue([...props.path, 'contents', newIdx], config)
   expanded.value = true
@@ -452,6 +473,18 @@ function cancelAddChild() {
   border-radius: 6px;
 }
 .cn-add-row--child { background: #eff6ff; border-color: #bfdbfe; }
+
+.cn-af-select {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-size: 11px;
+  background: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  max-width: 180px;
+}
+.cn-af-select:focus { border-color: #6366f1; outline: none; }
 
 .cn-af-key {
   border: 1px solid #d1d5db;

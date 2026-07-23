@@ -1,4 +1,5 @@
 export default {
+  group: 'chart',
   label: 'Stacked Area',
   fields: [
     { key: 'datasourceName',         type: 'datasource' },

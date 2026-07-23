@@ -1,4 +1,5 @@
 export default {
+  group: 'chart',
   label: 'Scatterplot',
   fields: [
     { key: 'datasourceName',         type: 'datasource' },

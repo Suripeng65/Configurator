@@ -1,4 +1,5 @@
 export default {
+  group: 'chart',
   label: 'Treemap',
   fields: [
     { key: 'datasourceName',         type: 'datasource' },

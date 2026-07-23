@@ -1,4 +1,5 @@
 export default {
+  group: 'chart',
   label: 'Data Table',
   fields: [
     { key: 'datasourceName',  type: 'datasource' },
