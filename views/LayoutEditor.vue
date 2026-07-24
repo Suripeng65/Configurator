@@ -56,6 +56,11 @@
         <!-- Tab body -->
         <div class="content-body">
 
+          <div class="tab-meta mb-3">
+            <span class="text-muted small">ID:</span>
+            <code class="tab-key-badge">{{ tab.key }}</code>
+          </div>
+
           <!-- Grid builder -->
           <BCard class="mb-3">
             <template #header>
@@ -176,49 +181,17 @@
 
       <template #tabs-end>
         <li class="nav-item d-flex align-items-center">
-          <BButton variant="link" size="sm" class="add-tab-btn" @click="showNewModal = true">+ Tab</BButton>
+          <BButton variant="link" size="sm" class="add-tab-btn" @click="createTab">+ Tab</BButton>
         </li>
       </template>
     </BTabs>
-
-    <!-- New tab modal -->
-    <BModal
-      v-model="showNewModal"
-      title="New Tab"
-      ok-title="Create"
-      ok-variant="primary"
-      cancel-variant="outline-secondary"
-      @ok.prevent="createTab"
-      @hidden="resetForm"
-    >
-      <BForm @submit.prevent="createTab">
-        <BFormGroup label="Title" label-for="new-tab-title">
-          <BFormInput
-            id="new-tab-title"
-            v-model="newTitle"
-            placeholder="e.g. Claims Overview"
-            @input="syncKey"
-          />
-        </BFormGroup>
-        <BFormGroup label="Key" label-for="new-tab-key" description="No spaces — used as the config identifier.">
-          <BFormInput
-            id="new-tab-key"
-            v-model="newKey"
-            placeholder="e.g. claims_overview"
-            style="font-family: monospace"
-            @input="keyManuallyEdited = true"
-          />
-        </BFormGroup>
-        <p v-if="newError" class="text-danger small mt-2 mb-0">{{ newError }}</p>
-      </BForm>
-    </BModal>
 
   </div>
 </template>
 
 <script setup>
 import { ref, computed, watch, inject, nextTick } from 'vue'
-import { BTabs, BTab, BModal, BForm, BFormGroup, BFormInput, BFormSelect, BFormCheckbox, BInputGroup, BInputGroupText, BButton, BCard } from 'bootstrap-vue-next'
+import { BTabs, BTab, BFormGroup, BFormInput, BFormSelect, BFormCheckbox, BInputGroup, BInputGroupText, BButton, BCard } from 'bootstrap-vue-next'
 import { useLayoutEditor } from '@src/composables/useLayoutEditor.js'
 import ComponentNode from '@src/components/user/ComponentNode.vue'
 
@@ -448,32 +421,20 @@ function saveTab() {
 }
 
 // ── New tab ───────────────────────────────────────────────────────────────────
-const showNewModal      = ref(false)
-const newTitle          = ref('')
-const newKey            = ref('')
-const newError          = ref('')
-const keyManuallyEdited = ref(false)
-
-function toKey(str) {
-  return str.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-_]/g, '')
-}
-
-function syncKey() {
-  if (!keyManuallyEdited.value) newKey.value = toKey(newTitle.value)
-}
-
 function createTab() {
-  const title = newTitle.value.trim()
-  const key   = newKey.value.trim()
-  if (!title) { newError.value = 'Title is required.'; return }
-  if (!key)   { newError.value = 'Key is required.'; return }
-  if (mainPanel.value?.[key]) { newError.value = `Key "${key}" already exists.`; return }
+  if (!mainPanel.value) return
 
-  const tabArrayLen = mainPanel.value?.['tab-array']?.length ?? 0
+  // Auto-generate a unique key
+  const existing = mainPanel.value?.['tab-array'] ?? []
+  let n = existing.length + 1
+  let key = `tab-${n}`
+  while (mainPanel.value?.[key]) { n++; key = `tab-${n}` }
+
+  const tabArrayLen = existing.length
   const tabsLen     = mainPanel.value?.['tabs']?.length ?? 0
 
   const tabConfig = {
-    title,
+    title: 'New Tab',
     component: 'TabWrapper',
     contents: [{
       component: 'GridContainer',
@@ -492,15 +453,11 @@ function createTab() {
   addChild(['viz', 'main-panel', 'tabs'], null, 'string')
   setValue(['viz', 'main-panel', 'tabs', tabsLen], key)
 
-  showNewModal.value = false
-  nextTick(() => { activeTabIndex.value = tabList.value.length - 1 })
-}
-
-function resetForm() {
-  newTitle.value          = ''
-  newKey.value            = ''
-  newError.value          = ''
-  keyManuallyEdited.value = false
+  // Switch to new tab then immediately open title edit
+  nextTick(() => {
+    activeTabIndex.value = tabList.value.length - 1
+    nextTick(() => startEdit(key, 'New Tab'))
+  })
 }
 
 // ── Monitor Parameters ────────────────────────────────────────────────────────
@@ -615,6 +572,16 @@ const monitorPanelPath  = computed(() => ['viz', 'left-panel', leftTabKey.value,
 
 /* ── Tab body ── */
 .content-body { padding: 20px 28px 32px; }
+
+.tab-meta { display: flex; align-items: center; gap: 6px; }
+.tab-key-badge {
+  font-size: 11px;
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-family: monospace;
+}
 
 /* ── Grid preview ── */
 .grid-preview {
