@@ -191,9 +191,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, inject, nextTick } from 'vue'
+import { computed, inject } from 'vue'
 import { BTabs, BTab, BFormGroup, BFormInput, BFormSelect, BFormCheckbox, BInputGroup, BInputGroupText, BButton, BCard } from 'bootstrap-vue-next'
 import { useLayoutEditor } from '@src/composables/useLayoutEditor.js'
+import { useTabManager }   from '@src/composables/useTabManager.js'
+import { useGridBuilder, CHART_TYPES } from '@src/composables/useGridBuilder.js'
 import ComponentNode from '@src/components/user/ComponentNode.vue'
 
 const vFocus = { mounted: (el) => el.focus() }
@@ -203,280 +205,21 @@ const { setValue, deleteNode, addChild } = useLayoutEditor(meta)
 
 const mainPanel    = computed(() => meta?.value?.layout?.viz?.['main-panel'] ?? null)
 const adaptLibrary = computed(() => meta?.value?.layout?.adaptLibrary ?? {})
-const adaptChartTypes = computed(() =>
-  Object.entries(adaptLibrary.value).map(([v, def]) => ({ v, l: def.label || v }))
-)
 
-const tabList = computed(() => {
-  if (!mainPanel.value) return []
-  return (mainPanel.value['tab-array'] ?? [])
-    .filter(k => mainPanel.value[k] != null)
-    .map(k => ({ key: k, title: mainPanel.value[k]?.title ?? k }))
-})
+const {
+  tabList, activeTabIndex, activeTabKey,
+  localTabTitles, editingTab, editTitle,
+  startEdit, commitEdit, cancelEdit,
+  deleteTab, createTab,
+} = useTabManager(mainPanel, { setValue, deleteNode, addChild })
 
-// ── Active tab ────────────────────────────────────────────────────────────────
-const activeTabIndex = ref(0)
-const activeTabKey   = computed(() => tabList.value[activeTabIndex.value]?.key ?? null)
-
-watch(tabList, (list) => {
-  if (activeTabIndex.value >= list.length) {
-    activeTabIndex.value = Math.max(0, list.length - 1)
-  }
-}, { immediate: true })
-
-// ── Inline title editing ──────────────────────────────────────────────────────
-const editingTab = ref(null)
-const editTitle  = ref('')
-
-// Local tab titles — source of truth for display, decoupled from meta.
-// resetModel() in EditorWorkflow replaces meta.value with server data at any
-// time, reverting local edits. localTabTitles survives that: it syncs from
-// meta only when the main-panel object reference changes (full server reload),
-// and is updated immediately on commit.
-const localTabTitles = ref({})
-
-watch(() => mainPanel.value, (panel) => {
-  if (!panel) return
-  for (const k of (panel['tab-array'] ?? [])) {
-    localTabTitles.value[k] = panel[k]?.title ?? k
-  }
-}, { immediate: true })
-
-function startEdit(key, title) {
-  editingTab.value = key
-  editTitle.value  = localTabTitles.value[key] ?? title
-}
-
-function commitEdit() {
-  const key   = editingTab.value
-  const title = editTitle.value.trim()
-  editingTab.value = null
-  if (!key || !title) return
-  localTabTitles.value[key] = title
-  setValue(['viz', 'main-panel', key, 'title'], title)
-}
-
-function cancelEdit() { editingTab.value = null }
-
-// ── Delete tab ────────────────────────────────────────────────────────────────
-function deleteTab(key) {
-  const label = mainPanel.value?.[key]?.title ?? key
-  if (!confirm(`Delete tab "${label}"?`)) return
-  const arr  = mainPanel.value?.['tab-array'] ?? []
-  const idx  = arr.indexOf(key)
-  if (idx >= 0) deleteNode(['viz', 'main-panel', 'tab-array', idx])
-  const tabs = mainPanel.value?.['tabs'] ?? []
-  const tIdx = tabs.indexOf(key)
-  if (tIdx >= 0) deleteNode(['viz', 'main-panel', 'tabs', tIdx])
-  deleteNode(['viz', 'main-panel', key])
-  nextTick(() => {
-    if (activeTabIndex.value >= tabList.value.length) {
-      activeTabIndex.value = Math.max(0, tabList.value.length - 1)
-    }
-  })
-}
-
-// ── Grid state (resets when active tab changes) ───────────────────────────────
-const CHART_TYPES = [
-  { v: 'BarChart',         l: 'Bar Chart' },
-  { v: 'LineChart',        l: 'Line Chart' },
-  { v: 'StackedBarChart',  l: 'Stacked Bar' },
-  { v: 'StackedAreaChart', l: 'Stacked Area' },
-  { v: 'PieChart',         l: 'Pie Chart' },
-  { v: 'DonutChart',       l: 'Donut Chart' },
-  { v: 'ScatterplotChart', l: 'Scatterplot' },
-  { v: 'TreemapChart',     l: 'Treemap' },
-  { v: 'DataTable',        l: 'Data Table' },
-]
-
-function parseGridRows(tab) {
-  if (!tab?.contents) return [{ size: 100, cells: [{ chart: 'BarChart', size: 100 }] }]
-  const gc = tab.contents.find(c => c.component === 'GridContainer')
-  if (!gc) return [{ size: 100, cells: [{ chart: 'BarChart', size: 100 }] }]
-  const rows     = gc.layouts?.[0]?.rows ?? []
-  const contents = gc.contents ?? []
-  if (!rows.length) return [{ size: 100, cells: [{ chart: 'BarChart', size: 100 }] }]
-  return rows.map((row, ri) => ({
-    size: Number(row.size) || Math.floor(100 / rows.length),
-    cells: (row.cells ?? []).map((cell, ci) => {
-      const stored = contents.find(c => c.cell === `dashboard-cell-${ri + 1}-${ci + 1}`)
-      return {
-        chart: stored?.component ?? 'BarChart',
-        size:  Number(cell.size) || Math.floor(100 / (row.cells?.length || 1)),
-      }
-    }),
-  }))
-}
-
-const gridRows = ref([])
-
-watch(activeTabKey, (key) => {
-  gridRows.value = parseGridRows(mainPanel.value?.[key] ?? null)
-}, { immediate: true })
-
-function cellId(ri, ci) { return `dashboard-cell-${ri + 1}-${ci + 1}` }
-
-function equalSizes(n) {
-  const base = Math.floor(100 / n)
-  return Array.from({ length: n }, (_, i) => (i < n - 1 ? base : 100 - base * (n - 1)))
-}
-
-function addRow() {
-  const sizes = equalSizes(gridRows.value.length + 1)
-  gridRows.value.forEach((r, i) => { r.size = sizes[i] })
-  gridRows.value.push({ size: sizes[sizes.length - 1], cells: [{ chart: 'BarChart', size: 100 }] })
-}
-
-function removeRow(ri) {
-  gridRows.value.splice(ri, 1)
-  equalSizes(gridRows.value.length).forEach((s, i) => { gridRows.value[i].size = s })
-}
-
-function addCell(ri) {
-  const cells = gridRows.value[ri].cells
-  const sizes = equalSizes(cells.length + 1)
-  cells.forEach((c, i) => { c.size = sizes[i] })
-  cells.push({ chart: 'DataTable', size: sizes[sizes.length - 1] })
-}
-
-function removeCell(ri, ci) {
-  const cells = gridRows.value[ri].cells
-  cells.splice(ci, 1)
-  equalSizes(cells.length).forEach((s, i) => { cells[i].size = s })
-}
-
-function clampRowSizes() {
-  gridRows.value.forEach(r => { r.size = Math.max(5, Math.min(95, r.size || 5)) })
-}
-
-function clampCellSizes(ri) {
-  gridRows.value[ri].cells.forEach(c => { c.size = Math.max(5, Math.min(95, c.size || 5)) })
-}
-
-// ── Cell configuration ────────────────────────────────────────────────────────
-function getGcIndex() {
-  const tab = mainPanel.value?.[activeTabKey.value]
-  return (tab?.contents ?? []).findIndex(c => c.component === 'GridContainer')
-}
-
-const storedCells = computed(() => {
-  const key = activeTabKey.value
-  if (!key) return []
-  const gcIdx = getGcIndex()
-  if (gcIdx < 0) return []
-  return mainPanel.value?.[key]?.contents?.[gcIdx]?.contents ?? []
-})
-
-const storedDatasources = computed(() => {
-  const key = activeTabKey.value
-  if (!key) return []
-  return (mainPanel.value?.[key]?.datasources ?? []).map(ds => ds.name).filter(n => n && n !== '/')
-})
-
-function setCellField(cellIndex, fieldKey, value) {
-  const key   = activeTabKey.value
-  const gcIdx = getGcIndex()
-  if (!key || gcIdx < 0) return
-  setValue(['viz', 'main-panel', key, 'contents', gcIdx, 'contents', cellIndex, fieldKey], value)
-}
-
-// ── Build & save ──────────────────────────────────────────────────────────────
-const FIELD_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
-
-function buildTabConfig() {
-  const key  = activeTabKey.value
-  const base = mainPanel.value?.[key] ?? {}
-  const title = base.title ?? key
-
-  const layoutRows = gridRows.value.map((row, ri) => ({
-    size: String(row.size),
-    cells: row.cells.map((cell, ci) => {
-      const obj = { id: cellId(ri, ci) }
-      if (row.cells.length > 1) obj.size = String(cell.size)
-      return obj
-    }),
-  }))
-
-  const existingGc    = base.contents?.find(c => c.component === 'GridContainer')
-  const existingCells = existingGc?.contents ?? []
-
-  const contents = []
-  gridRows.value.forEach((row, ri) => {
-    row.cells.forEach((cell, ci) => {
-      const id         = cellId(ri, ci)
-      const prev       = existingCells.find(c => c.cell === id)
-      const cellConfig = { ...(prev ?? {}), cell: id, component: cell.chart }
-      const adaptDef   = adaptLibrary.value[cell.chart]
-      if (adaptDef) {
-        for (const field of adaptDef.fields ?? []) {
-          if (!(field.key in cellConfig)) {
-            cellConfig[field.key] = field.default !== undefined ? field.default : (FIELD_DEFAULTS[field.type] ?? '')
-          }
-        }
-      }
-      if (!('datasourceName' in cellConfig)) cellConfig.datasourceName = '/'
-      contents.push(cellConfig)
-    })
-  })
-
-  return {
-    ...base,
-    title,
-    component: 'TabWrapper',
-    contents: [{ layouts: [{ id: 'layout-1', rows: layoutRows }], contents, component: 'GridContainer' }],
-    datasources: base.datasources ?? [{ name: '/', component: 'Datasource', 'dql-metrics': [], 'flat-table-target': '' }],
-    'right-panel':     base['right-panel']     ?? { 'tab-array': [], defaultTab: null },
-    'generate-report': base['generate-report'] ?? [],
-  }
-}
-
-function saveTab() {
-  const key = activeTabKey.value
-  if (!key) return
-  setValue(['viz', 'main-panel', key], buildTabConfig())
-}
-
-// ── New tab ───────────────────────────────────────────────────────────────────
-function createTab() {
-  if (!mainPanel.value) return
-
-  // Auto-generate a unique key
-  const existing = mainPanel.value?.['tab-array'] ?? []
-  let n = existing.length + 1
-  let key = `tab-${n}`
-  while (mainPanel.value?.[key]) { n++; key = `tab-${n}` }
-
-  const tabArrayLen = existing.length
-  const tabsLen     = mainPanel.value?.['tabs']?.length ?? 0
-
-  const tabConfig = {
-    title: 'New Tab',
-    component: 'TabWrapper',
-    contents: [{
-      component: 'GridContainer',
-      layouts: [{ id: 'layout-1', rows: [{ size: '100', cells: [{ id: 'dashboard-cell-1-1' }] }] }],
-      contents: [{ cell: 'dashboard-cell-1-1', component: 'BarChart', datasourceName: '/' }],
-    }],
-    datasources: [{ name: '/', component: 'Datasource', 'dql-metrics': [], 'flat-table-target': '' }],
-    'right-panel': { 'tab-array': [], defaultTab: null },
-    'generate-report': [],
-  }
-
-  addChild(['viz', 'main-panel'], key, 'object')
-  setValue(['viz', 'main-panel', key], tabConfig)
-  addChild(['viz', 'main-panel', 'tab-array'], null, 'string')
-  setValue(['viz', 'main-panel', 'tab-array', tabArrayLen], key)
-  addChild(['viz', 'main-panel', 'tabs'], null, 'string')
-  setValue(['viz', 'main-panel', 'tabs', tabsLen], key)
-
-  localTabTitles.value[key] = 'New Tab'
-
-  // Switch to new tab then immediately open title edit
-  nextTick(() => {
-    activeTabIndex.value = tabList.value.length - 1
-    nextTick(() => startEdit(key, 'New Tab'))
-  })
-}
+const {
+  adaptChartTypes,
+  gridRows, cellId,
+  addRow, removeRow, addCell, removeCell, clampRowSizes, clampCellSizes,
+  storedCells, storedDatasources, setCellField,
+  saveTab,
+} = useGridBuilder(activeTabKey, mainPanel, adaptLibrary, { setValue })
 
 // ── Monitor Parameters ────────────────────────────────────────────────────────
 const leftPanel         = computed(() => meta?.value?.layout?.viz?.['left-panel'] ?? {})
