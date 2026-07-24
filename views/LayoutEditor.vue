@@ -40,11 +40,12 @@
             class="tab-title-input"
             @click.stop
             @mousedown.stop
-            @blur="commitEdit"
-            @keyup.enter="commitEdit"
+            @keydown.stop
+            @keyup.enter="e => e.target.blur()"
             @keyup.escape="cancelEdit"
+            @blur="commitEdit"
           />
-          <span v-else @dblclick.stop="startEdit(tab.key, tab.title)">{{ tab.title }}</span>
+          <span v-else @dblclick.stop="startEdit(tab.key, tab.title)">{{ localTabTitles[tab.key] ?? tab.title }}</span>
           <span
             v-if="activeTabIndex === i && editingTab !== tab.key"
             class="tab-close ms-2"
@@ -227,17 +228,32 @@ watch(tabList, (list) => {
 const editingTab = ref(null)
 const editTitle  = ref('')
 
+// Local tab titles — source of truth for display, decoupled from meta.
+// resetModel() in EditorWorkflow replaces meta.value with server data at any
+// time, reverting local edits. localTabTitles survives that: it syncs from
+// meta only when the main-panel object reference changes (full server reload),
+// and is updated immediately on commit.
+const localTabTitles = ref({})
+
+watch(() => mainPanel.value, (panel) => {
+  if (!panel) return
+  for (const k of (panel['tab-array'] ?? [])) {
+    localTabTitles.value[k] = panel[k]?.title ?? k
+  }
+}, { immediate: true })
+
 function startEdit(key, title) {
   editingTab.value = key
-  editTitle.value  = title
+  editTitle.value  = localTabTitles.value[key] ?? title
 }
 
 function commitEdit() {
-  const key = editingTab.value
-  if (!key) return
+  const key   = editingTab.value
   const title = editTitle.value.trim()
-  if (title) setValue(['viz', 'main-panel', key, 'title'], title)
   editingTab.value = null
+  if (!key || !title) return
+  localTabTitles.value[key] = title
+  setValue(['viz', 'main-panel', key, 'title'], title)
 }
 
 function cancelEdit() { editingTab.value = null }
@@ -452,6 +468,8 @@ function createTab() {
   setValue(['viz', 'main-panel', 'tab-array', tabArrayLen], key)
   addChild(['viz', 'main-panel', 'tabs'], null, 'string')
   setValue(['viz', 'main-panel', 'tabs', tabsLen], key)
+
+  localTabTitles.value[key] = 'New Tab'
 
   // Switch to new tab then immediately open title edit
   nextTick(() => {
