@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import AppLayout from '../views/AppLayout.vue'
 import DatasetsView from '../views/DatasetsView.vue'
 import VariablesView from '../views/VariablesView.vue'
@@ -7,13 +7,14 @@ import UITemplatesView from '../views/UITemplatesView.vue'
 import UITemplateEditor from '../views/UITemplateEditor.vue'
 import DeploymentsView from "@src/views/DeploymentsView.vue";
 import DeploymentEditor from "@src/views/DeploymentEditor.vue";
-import DatasetsDetailView from '@src/views/DatasetsDetailView.vue'
+import DatasetsEdit from '@src/views/DatasetsEdit.vue'
 import UITemplateContainer from "@src/views/UITemplateContainer.vue";
 import LayoutEditor from "@src/views/LayoutEditor.vue";
+import DatasourcesList from "@src/views/DatasourcesList.vue";
 import DatasourceEditor from "@src/views/DatasourceEditor.vue";
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(),
   routes: [
     {
       path: '/',
@@ -22,66 +23,66 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: '/datasets',
+          redirect: '/dataset',
         },
         {
-          path: 'datasets',
-          name: 'Datasets',
+          path: 'dataset',
+          name: 'Dataset',
           component: DatasetsView,
-          meta: {breadcrumb: 'Datasets'},
+          meta: {breadcrumb: 'Datasets', model: "Dataset", action: "List"},
           children: [
             {
               path: ':id',
-              name: 'Datasets Edit',
-              component: DatasetsDetailView,
-              meta: {breadcrumb: 'Edit'},
+              name: 'Dataset Edit',
+              component: DatasetsEdit,
+              meta: {breadcrumb: 'Edit', model: "Dataset", action: "Edit"},
             },
             {
               path: 'create',
-              name: 'Datasets Create',
-              component: DatasetsDetailView,
-              meta: {breadcrumb: 'Create'},
+              name: 'Dataset Create',
+              component: DatasetsEdit,
+              meta: {breadcrumb: 'Create', model: "Dataset", action: "Create"},
             }
           ]
         },
         {
-          path: 'variables',
-          name: 'Variables',
+          path: 'variable',
+          name: 'Variable',
           component: VariablesView,
-          meta: {breadcrumb: 'Variables'},
+          meta: {breadcrumb: 'Variables', model: "Variable", action: "List"},
           children: [
             {
               path: ':id',
-              name: 'Variables Edit',
+              name: 'Variable Edit',
               component: VariablesDetailView,
-              meta: {breadcrumb: 'Edit'},
+              meta: {breadcrumb: 'Edit', model: "Variable", action: "Edit"},
             },
             {
               path: 'create',
-              name: 'Variables Create',
+              name: 'Variable Create',
               component: VariablesDetailView,
-              meta: {breadcrumb: 'Create'},
+              meta: {breadcrumb: 'Create', model: "Variable", action: "Create"},
             },
           ]
         },
         {
-          path: 'uitemplates',
-          name: 'UITemplates',
+          path: 'uitemplate',
+          name: 'UiTemplate',
           component: UITemplatesView,
-          meta: {breadcrumb: 'UI Templates'},
+          meta: {breadcrumb: 'UI Templates', model: "UiTemplate", action: "List"},
           children: [
             {
               path: ':id',
-              name: 'UITemplateEdit',
+              name: 'UiTemplate Edit',
               component: UITemplateContainer,
-              redirect: {name: "DetailsEdit"},
+              redirect: {name: "UiTemplate Edit Details", model: "UiTemplate", action: "Edit"},
               meta: {
                 breadcrumb: 'Edit',
               },
               children: [
                 {
                   path: 'details',
-                  name: 'DetailsEdit',
+                  name: 'UiTemplate Edit Details',
                   component: UITemplateEditor,
                   meta: {
                     breadcrumb: 'Details',
@@ -90,7 +91,7 @@ const router = createRouter({
                 },
                 {
                   path: 'layout',
-                  name: 'LayoutEdit',
+                  name: 'UiTemplate Edit Layout',
                   component: LayoutEditor,
                   meta: {
                     breadcrumb: 'Layout',
@@ -98,28 +99,45 @@ const router = createRouter({
                   },
                 },
                 {
-                  path: 'datasources',
-                  name: 'DatasourcesEdit',
-                  component: DatasourceEditor,
+                  path: 'datasource',
+                  name: 'UiTemplate Edit Datasource',
+                  component: DatasourcesList,
                   meta: {
                     breadcrumb: 'Datasources',
-                    editorSection: 'Datasources'
+                    editorSection: 'Datasource'
                   },
+                  children: [{
+                    path: 'create',
+                    name: 'UiTemplate Edit Datasource Create',
+                    component: DatasourceEditor,
+                    meta: {
+                      breadcrumb: 'Create',
+                      editorSection: 'Datasource'
+                    },
+                  },{
+                    path: ':index',
+                    name: 'UiTemplate Edit Datasource Edit',
+                    component: DatasourceEditor,
+                    meta: {
+                      breadcrumb: 'Create',
+                      editorSection: 'Datasource'
+                    },
+                  }]
                 },
               ]
             },
             {
               path: 'create',
-              name: 'UITemplateCreate',
+              name: 'UiTemplate Create',
               component: UITemplateContainer,
-              redirect: 'DetailsCreate',
+              // redirect: 'DetailsCreate',
               meta: {
-                breadcrumb: 'Create',
+                breadcrumb: 'Create', model: "UiTemplate", action: "Create"
               },
               children: [
                 {
                   path: 'details',
-                  name: 'DetailsCreate',
+                  name: 'UiTemplate Create Details',
                   component: UITemplateEditor,
                   meta: {
                     breadcrumb: 'Details',
@@ -128,7 +146,7 @@ const router = createRouter({
                 },
                 {
                   path: 'layout',
-                  name: 'LayoutCreate',
+                  name: 'UiTemplate Create Layous',
                   component: LayoutEditor,
                   meta: {
                     breadcrumb: 'Layout',
@@ -136,35 +154,52 @@ const router = createRouter({
                   },
                 },
                 {
-                  path: 'datasources',
-                  name: 'DatasourcesCreate',
-                  component: DatasourceEditor,
+                  path: 'datasource',
+                  name: 'UiTemplate Create Datasource',
+                  component: DatasourcesList,
                   meta: {
-                    breadcrumb: 'Datasources',
-                    editorSection: 'Datasources'
+                    breadcrumb: 'Datasource',
+                    editorSection: 'Datasource'
                   },
+                  children: [{
+                    path: 'create',
+                    name: 'UiTemplate Create Datasource Create',
+                    component: DatasourceEditor,
+                    meta: {
+                      breadcrumb: 'Create',
+                      editorSection: 'Datasource'
+                    },
+                  },{
+                    path: ':index',
+                    name: 'UiTemplate Create Datasource Edit',
+                    component: DatasourceEditor,
+                    meta: {
+                      breadcrumb: 'Create',
+                      editorSection: 'Datasource'
+                    },
+                  }]
                 },
               ]
             }
           ]
         },
         {
-          path: 'deployments',
-          name: 'Deployments',
+          path: 'deployment',
+          name: 'Deployment',
           component: DeploymentsView,
-          meta: {breadcrumb: 'Deployments'},
+          meta: {breadcrumb: 'Deployments', model: "Deployment", action: "List"},
           children: [
             {
               path: ':id',
-              name: 'Deployment Details',
+              name: 'Deployment Edit',
               component: DeploymentEditor,
-              meta: {breadcrumb: 'Details'},
+              meta: {breadcrumb: 'Details', model: "Deployment", action: "Edit"},
             },
             {
               path: 'create',
               name: 'Deployment Create',
               component: DeploymentEditor,
-              meta: {breadcrumb: 'Create'},
+              meta: {breadcrumb: 'Create', model: "Deployment", action: "Create"},
             },
           ]
         },

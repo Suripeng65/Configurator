@@ -221,7 +221,7 @@ const {
   saveTab,
 } = useGridBuilder(activeTabKey, mainPanel, adaptLibrary, { setValue })
 
-// ── Monitor Parameters ────────────────────────────────────────────────────────
+// ── Monitor Parameters 
 const leftPanel         = computed(() => meta?.value?.layout?.viz?.['left-panel'] ?? {})
 const leftTabKey        = computed(() => leftPanel.value?.tabs?.[0] ?? 'tab-one')
 const leftTabContent    = computed(() => leftPanel.value[leftTabKey.value] ?? {})
