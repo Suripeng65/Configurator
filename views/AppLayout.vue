@@ -19,11 +19,11 @@ const importText = ref('')
 const importError = ref('')
 
 const isEditorRoute = computed(() =>
-  route.path.startsWith('/uitemplates/') && !!route.params.id
+  route.path.startsWith('/uitemplate/') && !!route.params.id
 )
 
 const isUITemplateRoute = computed(() =>
-  route.path.startsWith('/uitemplates')
+  route.path.startsWith('/uitemplate')
 )
 
 function copyJson() {
@@ -110,20 +110,20 @@ onMounted(()=>{
 
       <!-- Left nav -->
       <aside class="left-nav">
-        <RouterLink to="/datasets"    class="nav-item" active-class="nav-active">Datasets</RouterLink>
-        <RouterLink to="/variables"   class="nav-item" active-class="nav-active">Variables</RouterLink>
-        <RouterLink to="/uitemplates" class="nav-item" active-class="nav-active"
+        <RouterLink to="/dataset"    class="nav-item" active-class="nav-active">Datasets</RouterLink>
+        <RouterLink to="/variable"   class="nav-item" active-class="nav-active">Variables</RouterLink>
+        <RouterLink to="/uitemplate" class="nav-item" active-class="nav-active"
           :class="{ 'nav-active': isUITemplateRoute }">UI Templates</RouterLink>
 
         <!-- Sub-nav shown when inside a specific UI template -->
         <template v-if="isUITemplateRoute && route.params.id">
-          <RouterLink :to="`/uitemplates/${route.params.id}/details`"     class="nav-sub" active-class="nav-sub-active">- Details</RouterLink>
-          <RouterLink :to="`/uitemplates/${route.params.id}/layout`"      class="nav-sub" active-class="nav-sub-active">- Layout</RouterLink>
-          <RouterLink :to="`/uitemplates/${route.params.id}/datasources`" class="nav-sub" active-class="nav-sub-active">- Datasources</RouterLink>
+          <RouterLink :to="`/uitemplate/${route.params.id}/details`"     class="nav-sub" active-class="nav-sub-active">- Details</RouterLink>
+          <RouterLink :to="`/uitemplate/${route.params.id}/layout`"      class="nav-sub" active-class="nav-sub-active">- Layout</RouterLink>
+          <RouterLink :to="`/uitemplate/${route.params.id}/datasource`" class="nav-sub" active-class="nav-sub-active">- Datasources</RouterLink>
 <!--          <RouterLink :to="`/uitemplates/${route.params.id}/apis`"        class="nav-sub" active-class="nav-sub-active">- APIs</RouterLink>-->
 <!--          <RouterLink :to="`/uitemplates/${route.params.id}/instances`"   class="nav-sub" active-class="nav-sub-active">Instances</RouterLink>-->
         </template>
-        <RouterLink to="/deployments"   class="nav-item" active-class="nav-active">Deployments</RouterLink>
+        <RouterLink to="/deployment"   class="nav-item" active-class="nav-active">Deployments</RouterLink>
       </aside>
 
       <!-- Main content -->

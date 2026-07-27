@@ -1,23 +1,21 @@
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import axios from 'axios'
 import { BTable, BButton } from 'bootstrap-vue-next'
 import { useTemplateStore } from '@src/stores/template'
 import Banner from '@src/components/Banner.vue'
 import { formatDate } from '@src/utils/date-util'
+import { uiTemplatesQueries } from '@src/queries'
+import UiTemplatesTable from "@src/components/UiTemplatesTable.vue";
 
 const store = useTemplateStore()
 const router = useRouter()
 const route = useRoute()
 
-const templates = ref([])
-const loading   = ref(false)
-const error     = ref('')
-
 const fields = [
-  { key: 'id',        label: 'ID' },
+  // { key: 'id',        label: 'ID' },
   { key: 'name',        label: 'Name' },
   { key: 'description',        label: 'Description' },
   { key: 'created',    label: 'Created',     thStyle: 'width:140px' },
@@ -26,18 +24,10 @@ const fields = [
   { key: 'actions',     label: '',             thStyle: 'width:90px' },
 ]
 
-async function fetchTemplates() {
-  loading.value = true
-  error.value = ''
-  try {
-    const res = await axios.get(`/ui-template/all`)
-    templates.value = res.data
-  } catch {
-    error.value = 'Failed to load UI templates.'
-  } finally {
-    loading.value = false
-  }
-}
+const { data, isLoading: loading, error } = uiTemplatesQueries.useList()
+const { mutate: create, isLoading: creating } = uiTemplatesQueries.useCreate()
+const { mutate: remove } = uiTemplatesQueries.useRemove()
+const rows = computed(() => data.value ?? [])
 
 function goToEditor(event) {
   const item = event?.item ?? event
@@ -48,45 +38,24 @@ function goToEditor(event) {
   })
 }
 
-onMounted(fetchTemplates)
 </script>
 <template>
   <router-view />
-  <div class="view-wrap" v-show="route.name === 'UITemplates'">
-    <Banner />
+  <div class="view-wrap" v-show="route.name === 'UiTemplate'">
+    <Banner>
+      <template #buttons>
+        <BButtonGroup>
+          <RouterLink :to="{ name: 'UiTemplate Create' }" class="btn btn-primary">Create</RouterLink>
+        </BButtonGroup>
+      </template>
+    </Banner>
 
     <div v-if="loading" class="state-msg">Loading…</div>
     <div v-else-if="error" class="state-msg error-msg">{{ error }}</div>
 
     <div v-else class="table-wrap">
-      <BTable
-        :items="templates"
-        :fields="fields"
-        hover
-        responsive
-        class="ui-table"
-        @row-clicked="goToEditor"
-      >
-        <template #cell(id)="{ item }">
-          <span class="mono-badge">{{ item.id || '—' }}</span>
-        </template>
-        <template #cell(description)="{ item }">
-          <span class="mono-badge">{{ item.description || '—' }}</span>
-        </template>
-        <template #cell(created)="{ item }">
-          <span class="date-cell">{{ formatDate(item.created) }}</span>
-        </template>
-        <template #cell(modified)="{ item }">
-          <span class="date-cell">{{ formatDate(item.modified) }}</span>
-        </template>
-        <template #cell(modifiedBy)="{ item }">
-          <span class="mono-badge">{{ item.modifiedBy }}</span>
-        </template>
-        <template #cell(actions)="{ item }">
-          <BButton size="sm" variant="primary" @click.stop="goToEditor(item)">Open →</BButton>
-        </template>
-      </BTable>
-      <p v-if="!templates.length" class="empty-msg">No UI templates found.</p>
+      <UiTemplatesTable :rows="rows"></UiTemplatesTable>
+      <p v-if="!rows.length" class="empty-msg">No UI templates found.</p>
     </div>
   </div>
 </template>

@@ -5,6 +5,8 @@ import {deploymentsQueries} from "@src/queries";
 import {cloneDeep} from "lodash";
 import Banner from '@src/components/Banner.vue'
 import useEditorWorkflow from "@src/composables/EditorWorkflow";
+import {uiTemplatesQueries, variablesQueries, datasetsQueries} from "@src/queries"
+import {BButton} from "bootstrap-vue-next";
 
 const route = useRoute()
 const router = useRouter()
@@ -30,6 +32,9 @@ const {
 } = useEditorWorkflow(deploymentsQueries, meta)
 
 const { data: allDeployments, isLoading: loadingDeployments } = deploymentsQueries.useList()
+const { data: datasets, isLoading: loadingDatasets } = datasetsQueries.useList()
+const { data: variables, isLoading: loadingVariables } = variablesQueries.useList()
+const { data: uiTemplates, isLoading: loadingUiTemplates } = uiTemplatesQueries.useList()
 
 function resetModel() {
   if (deployment.value) {
@@ -38,35 +43,24 @@ function resetModel() {
   }
 }
 
-const uiTemplates = computed(() => {
-  if (!allDeployments.value || allDeployments.value.length === 0) return []
-  return allDeployments.value
-    .map(row => row.templateConfig?.uiTemplate?.name)
-})
-
-const allVariables = computed(() => {
-  if (!allDeployments.value || allDeployments.value.length === 0) return []
-  return allDeployments.value
-    .map(row => row.templateConfig?.columnTemplate?.name)
-})
-
 </script>
 <template>
   <div class="editor-wrap">
-    <!-- Loading template -->
-    <div v-if="loading" class="state-msg">Loading template…</div>
+    <Banner>
+      <template #buttons>
+        <BButtonGroup>
+          <BButton variant="warning" size="sm" @click="resetModel">Reset</BButton>
+          <BButton variant="primary" size="sm" @click="update(meta)">Save</BButton>
+          <BButton variant="danger" size="sm" @click="remove(id)">Delete</BButton>
+        </BButtonGroup>
+      </template>
+    </Banner>
 
-    <!-- Error -->
-    <div v-else-if="error" class="error-state">
-      <strong>Could not load template</strong>
-      <pre>{{ error }}</pre>
-    </div>
-
-    <!-- No data -->
-    <div v-else-if="!deployment" class="state-msg">No deployment found</div>
+    <div v-if="loading" class="state-msg">Loading…</div>
+    <div v-else-if="error" class="state-msg error-msg">{{ error }}</div>
 
     <BForm v-else>
-      <IdentifierFormGroup :meta="meta"/>
+      <!-- <IdentifierFormGroup :meta="meta"/> -->
 
       <BFormGroup id="input-group-site-code" label="siteCode" label-for="input-site-code">
         <BFormInput id="input-site-code" v-model="meta.siteCode" placeholder="Enter name" required />
@@ -74,6 +68,16 @@ const allVariables = computed(() => {
 
        <BFormGroup id="input-group-container-id" label="ContainerId" label-for="input-container-id">
         <BFormInput id="input-container-id" v-model="meta.containerId" placeholder="Enter name" required />
+      </BFormGroup>
+
+      <BFormGroup id="dropdown-group-dataset" label="Dataset" label-for="input-dataset">
+        <BFormSelect
+            id="input-dataset"
+            v-model="meta.datasetMetadata.name"
+            :options="datasets"
+            text-field="name"
+            value-field="name"
+        ></BFormSelect>
       </BFormGroup>
 
       <BFormGroup id="dropdown-group-ui-template" label="UI Template" label-for="input-ui-template">
@@ -90,7 +94,7 @@ const allVariables = computed(() => {
         <BFormSelect
             id="input-variables"
             v-model="meta.templateConfig.columnTemplate.name"
-            :options="allVariables"
+            :options="variables"
             text-field="name"
             value-field="name"
         ></BFormSelect>

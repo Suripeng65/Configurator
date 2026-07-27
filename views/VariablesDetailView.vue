@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import {ref, onMounted, computed, Ref, watch} from 'vue'
+import {ref, Ref} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import axios from 'axios'
 import { BTable, BButton, BModal, BFormInput, BAlert } from 'bootstrap-vue-next'
 import Banner from '@src/components/Banner.vue'
 import HistoryFormGroup from "@src/components/HistoryFormGroup.vue";
-import IdentifierFormGroup from "@src/components/IdentifierFormGroup.vue";
 import useEditorWorkflow from "@src/composables/EditorWorkflow.ts";
 import {variablesQueries} from "@src/queries";
 import {cloneDeep} from "lodash";
@@ -88,7 +86,7 @@ async function submitCreate() {
     <div v-else-if="creating" class="state-msg error-msg">Creating…</div>
     <div v-else-if="updating" class="state-msg error-msg">Updating…</div>
     <BForm v-else>
-      <IdentifierFormGroup :meta="meta"/>
+      <!-- <IdentifierFormGroup :meta="meta"/> -->
 
       <BFormGroup id="input-group-2" label="Name" label-for="input-2">
         <BFormInput id="input-2" v-model="meta.name" placeholder="Enter name" required />

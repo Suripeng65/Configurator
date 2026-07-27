@@ -1,126 +1,217 @@
 <script setup lang="ts">
-import DatasourcesPanel from '@src/components/user/DatasourcesPanel.vue'
+import {inject, computed, ref} from "vue";
+import {useRoute} from "vue-router";
+import {get, set, unset} from "lodash";
+import DatasourceOnSelectEdit from "@src/components/DatasourceEditor/DatasourceOnSelectEdit.vue";
+import DatasourceOnLoadEdit from "@src/components/DatasourceEditor/DatasourceOnLoadEdit.vue";
+import DatasourceMonitorOverridesEdit from "@src/components/DatasourceEditor/DatasourceMonitorOverridesEdit.vue";
+
+const path = inject("path")
+const meta = inject<any>("meta")
+
+const datasources = inject("datasources", ref([]))
+const tabs = inject("tabs", ref([]))
+const route  = useRoute()
+const index = route.params.index ? parseInt(<string>route.params.index) : null
+const datasourceInfo = computed(() => get(datasources.value,[index,"matchedObject"], {}))
+const pagination = ref<{}>({})
+
+const workflow = computed({get: () => {
+    if (datasourceInfo.value["flat-table-target"]) return "Flat"
+    if (datasourceInfo.value["option-target"]) return "Options"
+  }, set: (newValue) => {
+    setTable(newValue, table.value)
+  }})
+
+const table = computed({get: () => {
+    return datasourceInfo.value["flat-table-target"] || datasourceInfo.value["option-target"]
+  }, set: (newValue) => {
+    setTable(workflow.value, newValue)
+  }})
+
+function setTable(workflow, table) {
+  switch (workflow) {
+    case "Flat":
+      set(meta.value.layout, [...path.value, "flat-table-target"], table)
+      unset(meta.value.layout, [...path.value, "option-target"])
+      break;
+    case "Options":
+      set(meta.value.layout, [...path.value, "option-target"], table)
+      unset(meta.value.layout, [...path.value, "flat-table-target"])
+      break;
+  }
+}
+
+const scopes = computed(() => {
+  return [{
+    matchedObject: {title: "Global"},
+    path: "viz.main-panel"
+  }, ...tabs.value]
+})
+
+const scope = computed({get: () => scopes.value.findLast(_scope => path.value.join(".").startsWith(_scope.path)).path
+  , set: (value) => {
+    console.log("setting scope", value)
+  }});
+
+const addRule = () => {
+  const empty = {
+    message: "",
+    rule: "",
+    ruleName: "",
+    visible: true
+  }
+  if (!meta.value.rules) meta.value.rules = []
+  meta.value.rules.push(empty)
+}
 </script>
 
 <template>
-  <DatasourcesPanel />
+  <BForm>
+    <BFormGroup id="input-group-scope" label="Scope" label-for="input-scope">
+      <BFormSelect
+          id="input-scope"
+          v-model="scope"
+          :options="scopes"
+          text-field="matchedObject.title"
+          value-field="path"
+      ></BFormSelect>
+    </BFormGroup>
+
+    <BFormGroup id="input-group-name" label="Name" label-for="input-name">
+      <BFormInput id="input-name" v-model="datasourceInfo.name" placeholder="Enter Name" required />
+    </BFormGroup>
+
+    <BFormGroup id="input-group-description" label="Description" label-for="input-description">
+      <BFormInput id="input-description" v-model="datasourceInfo.description" placeholder="Description" required />
+    </BFormGroup>
+
+    <BAccordion>
+      <BAccordionItem title="API">
+        <BFormGroup id="input-group-api" label="Description" label-for="input-api">
+          <BFormInput id="input-api" v-model="datasourceInfo.api" placeholder="API" required />
+        </BFormGroup>
+        <template v-if="datasourceInfo.api && datasourceInfo.api !== 'adapt-core-api'">
+          <BFormGroup id="input-group-dql-support" label="DQL Support" label-for="input-dql-support">
+            <BFormCheckbox id="input-dql-support" v-model="datasourceInfo['dql-support']" required />
+          </BFormGroup>
+          <BFormGroup id="input-group-table-schema" label="Table Schema" label-for="input-table-schema">
+            <BFormInput id="input-table-schema" v-model="datasourceInfo['table-schema']" required />
+          </BFormGroup>
+          <template v-if="datasourceInfo.api && datasourceInfo['dql-support']">
+            <BFormGroup id="input-group-dropdowns" label="Dropdowns" label-for="input-dropdowns">
+              <BFormInput id="input-dropdowns" v-model="datasourceInfo['dropdowns']" required />
+            </BFormGroup>
+            <BFormGroup id="input-group-available-options" label="Available Options" label-for="input-available-options">
+              <BFormInput id="input-available-options" v-model="datasourceInfo['available-options']" required />
+            </BFormGroup>
+            <BFormGroup id="input-group-total-count" label="Total Count" label-for="input-total-count">
+              <BFormInput id="input-total-count" v-model="datasourceInfo['total-count']" required />
+            </BFormGroup>
+            <BFormGroup id="input-group-load-items" label="Load Items" label-for="input-load-items">
+              <BFormInput id="input-load-items" v-model="datasourceInfo['load-items']" required />
+            </BFormGroup>
+          </template>
+          <BFormGroup id="input-group-archive" label="Archive" label-for="input-archive">
+            <BFormInput id="input-archive" v-model="datasourceInfo['archive']" required />
+          </BFormGroup>
+          <BFormGroup id="input-group-cancel" label="Cancel" label-for="input-cancel">
+            <BFormInput id="input-cancel" v-model="datasourceInfo['cancel']" required />
+          </BFormGroup>
+        </template>
+      </BAccordionItem>
+
+      <BAccordionItem title="Workflow">
+        <BFormRadioGroup id="input-workflow" label="Archive" v-model="workflow" :options="['Options', 'Flat']"></BFormRadioGroup>
+        <BFormGroup id="input-group-table" label="Table" label-for="input-table">
+          <BFormInput id="input-table" v-model="table" placeholder="Enter Table" required />
+        </BFormGroup>
+
+        <DatasourceOnLoadEdit/>
+
+        <DatasourceMonitorOverridesEdit />
+
+        <h6>Rules</h6>
+        <BTable :items="datasourceInfo.rules">
+          <template #cell(ruleName)="{ item, index }">
+          <BFormInput
+              :id="`rule-name-${index}`"
+              v-model="item.ruleName"
+          ></BFormInput>
+          </template>
+          <template #cell(rule)="{ item, index }">
+          <BFormInput
+              :id="`rule-rule-${index}`"
+              v-model="item.rule"
+          ></BFormInput>
+          </template>
+          <template #cell(message)="{ item, index }">
+          <BFormInput
+              :id="`rule-message-${index}`"
+              v-model="item.message"
+          ></BFormInput>
+          </template>
+          <template #cell(visible)="{ item, index }">
+          <BFormCheckbox
+              :id="`rule-visible-${index}`"
+              v-model="item.visible"
+          ></BFormCheckbox>
+          </template>
+        </BTable>
+        <BButton @click="addRule">Add</BButton>
+
+        <BFormGroup id="input-group-data-refresh" label="Data Refresh" label-for="input-data-refresh">
+          <BFormInput id="input-data-refresh" type="number" v-model="datasourceInfo['data-refresh']" />
+        </BFormGroup>
+
+        <BFormGroup id="input-group-auto-load" label="Auto-Load" label-for="input-auto-load">
+          <BFormCheckbox id="input-auto-load" v-model="datasourceInfo['auto-load']" />
+        </BFormGroup>
+
+        <BFormGroup id="input-group-detach-from-root" label="Detach from Root" label-for="detach-from-root">
+          <BFormCheckbox id="detach-from-root" v-model="datasourceInfo['detach-from-root']" />
+        </BFormGroup>
+      </BAccordionItem>
+
+      <BAccordionItem title="Schema">
+        <BFormGroup id="input-group-linked-tables" label="Linked Tables" label-for="linked-tables">
+          <BFormTags id="linked-tables" v-model="datasourceInfo['linked-tables']" placeholder="list table names"></BFormTags>
+        </BFormGroup>
+
+        <BFormGroup id="input-group-dql-metrics" label="DQL Metrics" label-for="dql-metrics">
+          <BFormTags id="dql-metrics" v-model="datasourceInfo['dql-metrics']" placeholder="list DQL metrics"></BFormTags>
+        </BFormGroup>
+
+        <BFormGroup id="input-group-max-threshold" label="Max Threshold" label-for="input-max-threshold">
+          <BFormInput id="input-max-threshold" type="number" v-model="datasourceInfo['max-threshold']" />
+        </BFormGroup>
+
+        <BFormGroup id="input-group-max" label="Max" label-for="input-max">
+          <BFormInput id="input-max" type="number" v-model="pagination.max" />
+        </BFormGroup>
+
+        <BFormGroup id="input-group-offset" label="Offset" label-for="input-offset">
+          <BFormInput id="input-offset" type="number" v-model="pagination.offset" />
+        </BFormGroup>
+      </BAccordionItem>
+
+      <BAccordionItem title="Selection Behaviors">
+        <DatasourceOnSelectEdit></DatasourceOnSelectEdit>
+        <BFormGroup id="input-group-select-multiple-items" label="Select Multiple Items" label-for="input-select-multiple-items">
+          <BFormInput id="input-select-multiple-items" type="number" v-model="datasourceInfo['select-multiple-items']" />
+        </BFormGroup>
+
+        <BFormGroup id="input-group-select-multiple-columns" label="Select Multiple Columns" label-for="input-select-multiple-columns">
+          <BFormInput id="input-select-multiple-columns" type="number" v-model="datasourceInfo['select-multiple-columns']" />
+        </BFormGroup>
+        <!--  on-filter behavior not currently defined    -->
+      </BAccordionItem>
+    </BAccordion>
+  </BForm>
 </template>
 
 <style scoped>
-.editor-wrap {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  flex-direction: column;
-}
-
-.state-msg { padding: 40px; text-align: center; color: #6b7280; font-size: 14px; }
-
-.error-state {
-  padding: 32px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  color: #dc2626;
-  text-align: center;
-}
-.error-state pre {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  padding: 12px;
-  border-radius: 6px;
-  font-size: 11px;
-  color: #7f1d1d;
-  white-space: pre-wrap;
-  max-width: 480px;
-}
-
-.empty-state {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f9fafb;
-}
-.empty-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 40px 48px;
-  text-align: center;
-}
-.empty-icon { font-size: 40px; }
-.empty-card h3 { font-size: 16px; font-weight: 700; color: #111; margin: 0; }
-.empty-card p  { font-size: 13px; color: #6b7280; margin: 0; }
-
-/* Split pane (same as old ConfigEditor) */
-.split-container {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-.split-container.is-dragging { cursor: col-resize; user-select: none; }
-
-.tree-pane {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: #fff;
-  min-width: 200px;
-}
-.preview-pane {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 160px;
-}
-.splitter {
-  flex: 0 0 6px;
-  background: #e5e7eb;
-  cursor: col-resize;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-}
-.splitter:hover, .split-container.is-dragging .splitter { background: #c7d2fe; }
-.splitter-dots {
-  width: 2px;
-  height: 32px;
-  border-radius: 2px;
-  background: repeating-linear-gradient(to bottom, #9ca3af 0px, #9ca3af 3px, transparent 3px, transparent 6px);
-}
-.pane-title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #6b7280;
-  padding: 8px 12px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.copy-icon-btn { background: none; color: #9ca3af; font-size: 14px; padding: 0; line-height: 1; }
-.copy-icon-btn:hover { color: #374151; }
-.tree-scroll { flex: 1; overflow: auto; padding: 8px 4px 24px 8px; }
-
-.coming-soon {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #9ca3af;
-  font-size: 14px;
+form {
+  overflow: scroll;
 }
 </style>

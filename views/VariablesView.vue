@@ -1,49 +1,26 @@
 
 <script setup>
-import { ref, onMounted, computed} from 'vue'
+import { ref, computed} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-import axios from 'axios'
-import { BTable } from 'bootstrap-vue-next'
 import Banner from '@src/components/Banner.vue'
-import { formatDate } from '@src/utils/date-util'
-import { datasetsQueries } from '@src/queries'
+import { variablesQueries } from '@src/queries'
+import VariableTable from "@src/components/VariableTable.vue";
 
 const router = useRouter()
 const route = useRoute()
 
 const datasets = ref([])
 
-const { data: variablesData, isLoading: loading, error } = datasetsQueries.useList()
-const { mutate: createDataset, isLoading: creating } = datasetsQueries.useCreate()
-const { mutate: removeDataset } = datasetsQueries.useRemove()
+const { data: variablesData, isLoading: loading, error } = variablesQueries.useList()
 
 const rows = computed(() => variablesData.value ?? [])
-
-const fields = [
-  { key: 'id', label: 'ID' },
-  { key: 'name', label: 'Column Template Name' },
-  { key: 'description', label: 'Description' },
-  { key: 'created', label: 'Created' },
-  { key: 'modified', label: 'Modified' },
-  { key: 'modifiedBy', label: 'Modified By' },
-]
-
-function goToDetail(event) {
-  const row = event?.item ?? event
-  router.push({
-    name: `Variables Edit`,
-    params: { id: row.id }
-  })
-}
-
 </script>
 <template>
-  <router-view />
-  <div class="view-wrap" v-if="route.name==='Variables'">
+  <div class="view-wrap" v-if="route.name==='Variable'">
     <Banner>
       <template #buttons>
         <BButtonGroup>
-          <RouterLink to="/variables/create" class="btn btn-primary">Create</RouterLink>
+          <RouterLink to="/variable/create" class="btn btn-primary">Create</RouterLink>
         </BButtonGroup>
       </template>
     </Banner>
@@ -52,33 +29,11 @@ function goToDetail(event) {
     <div v-else-if="error" class="state-msg error-msg">{{ error }}</div>
 
     <div v-else class="table-wrap">
-      <BTable
-        :items="rows"
-        :fields="fields"
-        hover
-        responsive
-        class="vars-table"
-        @row-clicked="goToDetail"
-      >
-        <template #cell(dsid)="{ item }">
-          <span class="ds-id-badge">{{ item.dsid }}</span>
-        </template>
-         <template #cell(description)="{ item }">
-          <span class="mono-badge">{{ item.description }}</span>
-        </template>
-          <template #cell(created)="{ item }">
-          <span class="date-cell">{{ formatDate(item.created) }}</span>
-        </template>
-        <template #cell(modified)="{ item }">
-          <span class="date-cell">{{ formatDate(item.modified) }}</span>
-        </template>
-        <template #cell(modifiedBy)="{ item }">
-          <span class="mono-badge">{{ item.modifiedBy }}</span>
-        </template>
-      </BTable>
-      <p v-if="!datasets.length" class="empty-msg">No datasets found.</p>
+      <VariableTable :rows="rows"></VariableTable>
+      <p v-if="!rows.length" class="empty-msg">No Variable Lists found.</p>
     </div>
   </div>
+  <router-view />
 </template>
 
 <style scoped>

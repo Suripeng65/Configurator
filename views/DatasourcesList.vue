@@ -1,23 +1,78 @@
 <script setup lang="ts">
-import {inject } from 'vue'
-import HistoryFormGroup from "@src/components/HistoryFormGroup.vue";
-import IdentifierFormGroup from "@src/components/IdentifierFormGroup.vue";
+import {computed, inject, ref, provide} from 'vue'
+import {useRoute, useRouter} from "vue-router";
+import {findComponents, getScope} from "@src/utils/datasources.util.ts"
 
-const meta: Record<string, any> = inject('meta') as Record<string, any>;
+const route = useRoute()
+const router = useRouter()
+
+const fields = [
+  { key: 'path',        label: 'Scope', thStyle: 'min-width:100px' },
+  { key: 'name',        label: 'Datasource Name', thStyle: 'min-width:180px' },
+  { key: 'type',        label: 'Type',         thStyle: 'min-width:140px' },
+  { key: 'api',    label: 'API',     thStyle: 'min-width:100px' },
+  { key: 'table',    label: 'Table',     thStyle: 'min-width:100px' },
+]
+
+const meta = inject('meta')
+const datasources = computed({
+  get: () => {
+    console.log("meta for datasource", meta.value)
+    return findComponents(meta.value.layout, "Datasource");
+  },
+  set: (newValue, oldValue) => {
+  }
+})
+const tabs = computed({
+  get: () :any[] => findComponents(meta.value.layout, "TabWrapper"),
+  set: (newValue, oldValue) => {
+  }
+})
+
+const selectedDatasource = ref({})
+const path = ref(["viz", "main-panel"])
+
+provide("tabs", tabs)
+provide("datasources", datasources)
+provide("path", path)
+
+function goToEditor(item) {
+  selectedDatasource.value = item.matchedObject
+  path.value = item.fullPathArray
+  const index = datasources.value.findIndex((candidate) => candidate.path === item.path)
+
+  router.push({name: route.name + " Edit", params: {index, id: meta.value.id}})
+}
 </script>
 
 <template>
-  <!-- <IdentifierFormGroup :meta="meta"/> -->
-
-  <BFormGroup id="input-group-2" label="Name:" label-for="input-2">
-    <BFormInput id="input-2" v-model="meta.name" placeholder="Enter name" required />
-  </BFormGroup>
-
-  <BFormGroup id="input-group-3" label="Description:" label-for="input-3">
-    <BFormTextarea id="input-3" v-model="meta.description" placeholder="Enter description" />
-  </BFormGroup>
-
-  <HistoryFormGroup :meta="meta"/>
+  <BTable
+      v-if="route.name === 'UiTemplate Edit Datasource' || route.name === 'UiTemplate Create Datasource'"
+      :items="datasources"
+      :fields="fields"
+      bordered
+      hover
+      responsive
+      class="dataset-table"
+      @row-clicked="goToEditor"
+  >
+    <template #cell(path)="{ item }">
+      <span class="date-cell">{{ getScope(meta, item.fullPathArray) }}</span>
+    </template>
+    <template #cell(name)="{ item }">
+      <span class="date-cell">{{ item.matchedObject.name }}</span>
+    </template>
+    <template #cell(table)="{ item }">
+      <span class="date-cell">{{ item.matchedObject["flat-table-target"] || item.matchedObject["option-target"] }}</span>
+    </template>
+    <template #cell(type)="{ item }">
+      <span class="date-cell">{{ (item.matchedObject.dqlSupport || !item.matchedObject.api) ? "DQL" : "External API" }}</span>
+    </template>
+    <template #cell(api)="{ item }">
+      <span class="date-cell">{{ item.matchedObject.api || "adapt-core-api"}}</span>
+    </template>
+  </BTable>
+  <router-view></router-view>
 </template>
 
 <style scoped>
