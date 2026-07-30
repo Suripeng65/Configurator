@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import {ref, onMounted, reactive, Ref, watch} from 'vue'
+import {ref, computed, onMounted, reactive, Ref, watch} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
-import { BTable, BButton, BFormInput } from 'bootstrap-vue-next'
+import { BTable, BButton, BFormInput, BFormCheckbox } from 'bootstrap-vue-next'
 import Banner from '@src/components/Banner.vue'
 import HistoryFormGroup from "@src/components/HistoryFormGroup.vue";
 import useEditorWorkflow from "@src/composables/EditorWorkflow";
@@ -17,7 +17,7 @@ const meta: Ref<Record<string, any>>       = ref({
   id: id,
   name: history.state?.name ?? '',
   description: history.state?.description ?? '',
-  releases: []
+  releases: [],
 })
 
 const {
@@ -43,6 +43,39 @@ function resetModel() {
 const columns   = ref([])
 const showCreate = ref(false)
 const newCol     = ref({ columnName: '', columnDisplayName: '', format: '', visibility: true })
+
+// ── Attributes ────────────────────────────────────────────────────────────────
+const KNOWN_ATTR_KEYS = ['autoLoad', 'DatasetLabel', 'refreshButton']
+
+const extraAttributeEntries = computed(() =>
+  Object.entries(meta.value.attributes ?? {}).filter(([key]) => !KNOWN_ATTR_KEYS.includes(key))
+)
+
+function setAttribute(key, value) {
+  if (!meta.value.attributes) meta.value.attributes = {}
+  meta.value.attributes[key] = value
+}
+
+function removeAttribute(key) {
+  if (!meta.value.attributes) return
+  delete meta.value.attributes[key]
+}
+
+const showAddAttr  = ref(false)
+const newAttrKey   = ref('')
+const newAttrValue = ref('')
+
+function commitAddAttribute() {
+  const key = newAttrKey.value.trim()
+  if (!key) return
+  setAttribute(key, newAttrValue.value)
+  cancelAddAttribute()
+}
+function cancelAddAttribute() {
+  showAddAttr.value  = false
+  newAttrKey.value   = ''
+  newAttrValue.value = ''
+}
 
 const fields = [
   { key: 'id', label: 'ID',  thStyle: 'min-width:120px' },
@@ -97,6 +130,48 @@ function markDirty(i) {
       </BFormGroup>
 
       <HistoryFormGroup :meta="meta"/>
+
+      <BFormGroup label="Attributes:" class="attrs-group">
+        <BFormGroup label="Auto Load" label-cols="3" label-class="small text-muted" class="mb-2">
+          <BFormCheckbox
+            :model-value="meta.attributes?.autoLoad ?? false"
+            @update:model-value="setAttribute('autoLoad', $event)"
+          />
+        </BFormGroup>
+        <BFormGroup label="Dataset Label" label-cols="3" label-class="small text-muted" class="mb-2">
+          <BFormInput
+            :model-value="meta.attributes?.DatasetLabel ?? ''"
+            placeholder="Enter dataset label"
+            @change="setAttribute('DatasetLabel', $event.target.value)"
+          />
+        </BFormGroup>
+        <BFormGroup label="Refresh Button" label-cols="3" label-class="small text-muted" class="mb-2">
+          <BFormCheckbox
+            :model-value="meta.attributes?.refreshButton ?? false"
+            @update:model-value="setAttribute('refreshButton', $event)"
+          />
+        </BFormGroup>
+
+        <div v-if="extraAttributeEntries.length" class="attr-extra-list">
+          <div v-for="[key, value] in extraAttributeEntries" :key="key" class="attr-row">
+            <span class="attr-key">{{ key }}</span>
+            <BFormInput
+              size="sm"
+              :model-value="value"
+              @change="setAttribute(key, $event.target.value)"
+            />
+            <BButton variant="link" size="sm" class="attr-remove p-0" title="Remove attribute" @click="removeAttribute(key)">✕</BButton>
+          </div>
+        </div>
+
+        <div v-if="showAddAttr" class="attr-add-row">
+          <BFormInput v-model="newAttrKey" size="sm" placeholder="key" class="attr-add-key" @keyup.enter="commitAddAttribute" @keyup.escape="cancelAddAttribute" />
+          <BFormInput v-model="newAttrValue" size="sm" placeholder="value" @keyup.enter="commitAddAttribute" @keyup.escape="cancelAddAttribute" />
+          <BButton variant="primary" size="sm" @click="commitAddAttribute">Add</BButton>
+          <BButton variant="link" size="sm" class="text-secondary p-0" @click="cancelAddAttribute">✕</BButton>
+        </div>
+        <BButton v-else variant="outline-secondary" size="sm" @click="showAddAttr = true">+ Add Attribute</BButton>
+      </BFormGroup>
 
       <BFormGroup id="input-group-4" label="Releases:" label-for="input-3" v-if="meta.releases">
         <BTable
@@ -165,4 +240,31 @@ function markDirty(i) {
 .form-row { display: flex; flex-direction: column; gap: 4px; }
 .form-row label { font-size: 12px; font-weight: 600; color: #374151; }
 .form-row-check { flex-direction: row; align-items: center; gap: 10px; }
+
+.attrs-group { margin-bottom: 1rem; }
+
+.attr-extra-list { display: flex; flex-direction: column; gap: 4px; margin: 10px 0; }
+.attr-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f9fafb;
+  border-radius: 4px;
+  padding: 4px 8px;
+}
+.attr-key { width: 140px; flex-shrink: 0; font-size: 12px; font-family: monospace; color: #6b7280; }
+.attr-remove { color: #d1d5db !important; font-size: 14px; }
+.attr-remove:hover { color: #dc2626 !important; }
+
+.attr-add-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  background: #f5f3ff;
+  border: 1px solid #c4b5fd;
+  border-radius: 6px;
+}
+.attr-add-key { max-width: 160px; }
 </style>
