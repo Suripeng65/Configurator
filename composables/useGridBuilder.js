@@ -1,4 +1,5 @@
 import { ref, computed, watch } from 'vue'
+import { ADAPT_COMPONENTS } from '../components/AdaptComponents/index.js'
 
 export const CHART_TYPES = [
   { v: 'BarChart',         l: 'Bar Chart' },
@@ -14,11 +15,7 @@ export const CHART_TYPES = [
 
 const FIELD_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
 
-export function useGridBuilder(activeTabKey, mainPanel, adaptLibrary, { setValue }) {
-  const adaptChartTypes = computed(() =>
-    Object.entries(adaptLibrary.value).map(([v, def]) => ({ v, l: def.label || v }))
-  )
-
+export function useGridBuilder(activeTabKey, mainPanel, { setValue }) {
   // ── Grid rows ─────────────────────────────────────────────────────────────
   function cellId(ri, ci) { return `dashboard-cell-${ri + 1}-${ci + 1}` }
 
@@ -133,7 +130,7 @@ export function useGridBuilder(activeTabKey, mainPanel, adaptLibrary, { setValue
         const id         = cellId(ri, ci)
         const prev       = existingCells.find(c => c.cell === id)
         const cellConfig = { ...(prev ?? {}), cell: id, component: cell.chart }
-        const adaptDef   = adaptLibrary.value[cell.chart]
+        const adaptDef   = ADAPT_COMPONENTS[cell.chart]
         if (adaptDef) {
           for (const field of adaptDef.fields ?? []) {
             if (!(field.key in cellConfig)) {
@@ -164,7 +161,6 @@ export function useGridBuilder(activeTabKey, mainPanel, adaptLibrary, { setValue
   }
 
   return {
-    adaptChartTypes,
     gridRows,
     cellId,
     addRow, removeRow, addCell, removeCell,

@@ -87,9 +87,6 @@
                   <span class="cell-id-label">{{ cellId(ri, ci) }}</span>
                   <BFormSelect v-model="cell.chart" size="sm">
                     <option v-for="c in CHART_TYPES" :key="c.v" :value="c.v">{{ c.l }}</option>
-                    <optgroup v-if="adaptChartTypes.length" label="Adapt Library">
-                      <option v-for="c in adaptChartTypes" :key="c.v" :value="c.v">{{ c.l }}</option>
-                    </optgroup>
                   </BFormSelect>
                   <div class="d-flex align-items-center justify-content-between gap-1 mt-1">
                     <BInputGroup size="sm">
@@ -131,11 +128,11 @@
             <div v-for="(cell, ci) in storedCells" :key="ci" class="cell-config" :class="{ 'mt-2': ci > 0 }">
               <div class="d-flex align-items-center gap-2 px-3 py-2 bg-light border-bottom">
                 <code class="small text-primary">{{ cell.cell }}</code>
-                <strong class="small">{{ adaptLibrary[cell.component]?.label ?? cell.component }}</strong>
+                <strong class="small">{{ ADAPT_COMPONENTS[cell.component]?.label ?? cell.component }}</strong>
               </div>
-              <div v-if="adaptLibrary[cell.component]?.fields?.length" class="px-3 py-2">
+              <div v-if="ADAPT_COMPONENTS[cell.component]?.fields?.length" class="px-3 py-2">
                 <BFormGroup
-                  v-for="field in adaptLibrary[cell.component].fields"
+                  v-for="field in ADAPT_COMPONENTS[cell.component].fields"
                   :key="field.key"
                   :label="field.key"
                   label-cols="4"
@@ -196,6 +193,7 @@ import { BTabs, BTab, BFormGroup, BFormInput, BFormSelect, BFormCheckbox, BInput
 import { useLayoutEditor } from '@src/composables/useLayoutEditor.js'
 import { useTabManager }   from '@src/composables/useTabManager.js'
 import { useGridBuilder, CHART_TYPES } from '@src/composables/useGridBuilder.js'
+import { ADAPT_COMPONENTS } from '@src/components/AdaptComponents/index.js'
 import ComponentNode from '@src/components/user/ComponentNode.vue'
 
 const vFocus = { mounted: (el) => el.focus() }
@@ -203,8 +201,7 @@ const vFocus = { mounted: (el) => el.focus() }
 const meta = inject('meta')
 const { setValue, deleteNode, addChild } = useLayoutEditor(meta)
 
-const mainPanel    = computed(() => meta?.value?.layout?.viz?.['main-panel'] ?? null)
-const adaptLibrary = computed(() => meta?.value?.layout?.adaptLibrary ?? {})
+const mainPanel = computed(() => meta?.value?.layout?.viz?.['main-panel'] ?? null)
 
 const {
   tabList, activeTabIndex, activeTabKey,
@@ -214,12 +211,11 @@ const {
 } = useTabManager(mainPanel, { setValue, deleteNode, addChild })
 
 const {
-  adaptChartTypes,
   gridRows, cellId,
   addRow, removeRow, addCell, removeCell, clampRowSizes, clampCellSizes,
   storedCells, storedDatasources, setCellField,
   saveTab,
-} = useGridBuilder(activeTabKey, mainPanel, adaptLibrary, { setValue })
+} = useGridBuilder(activeTabKey, mainPanel, { setValue })
 
 // ── Monitor Parameters 
 const leftPanel         = computed(() => meta?.value?.layout?.viz?.['left-panel'] ?? {})

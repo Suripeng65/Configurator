@@ -1,4 +1,4 @@
-function getAtPath(obj, path) {
+export function getAtPath(obj, path) {
   return path.reduce((acc, k) => (acc != null ? acc[k] : undefined), obj)
 }
 

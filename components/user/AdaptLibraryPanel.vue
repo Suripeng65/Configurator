@@ -3,18 +3,12 @@
     <div class="panel-header">
       <h2 class="panel-title">Adapt Library Components</h2>
       <p class="panel-subtitle">
-        Define reusable component types. Use them in Visualization Tabs and Monitor Parameters.
+        Bulk-edit config fields for a component type. Save applies the change to every place
+        that type is used in this template's layout — nothing is stored separately.
       </p>
     </div>
 
-    <!-- Empty state (only shown if all components are deleted) -->
-    <div v-if="!componentNames.length" class="empty-state">
-      <div class="empty-icon">🧩</div>
-      <p>No components defined.</p>
-      <BButton variant="primary" @click="openAdd">+ Create a component</BButton>
-    </div>
-
-    <div v-else class="panel-body">
+    <div class="panel-body">
 
       <!-- Left: component list -->
       <aside class="comp-list">
@@ -30,27 +24,17 @@
             @click="selectComponent(name)"
           >
             <span class="comp-name">{{ name }}<span v-if="selected === name && isDirty" class="dirty-dot" title="Unsaved changes">●</span></span>
-            <span class="comp-sub">{{ adaptLibrary[name]?.label }}</span>
+            <span class="comp-sub">{{ ADAPT_COMPONENTS[name].label }} · {{ usageCountFor(name) }} use{{ usageCountFor(name) === 1 ? '' : 's' }}</span>
           </BListGroupItem>
         </BListGroup>
-
-        <BButton variant="outline-secondary" size="sm" class="add-comp-btn" @click="openAdd">+ New Component</BButton>
       </aside>
 
       <!-- Right: editor -->
-      <div class="comp-editor" v-if="selected && draft">
+      <div class="comp-editor" v-if="selected">
 
         <BFormGroup label="Component Name" label-class="block-label">
           <code class="comp-key">{{ selected }}</code>
-        </BFormGroup>
-
-        <BFormGroup label="Display Label" label-class="block-label">
-          <BFormInput
-            :model-value="draft.label"
-            placeholder="e.g. Bar Chart"
-            style="max-width:320px"
-            @change="draft.label = $event.target.value"
-          />
+          <span class="usage-note">used in {{ usageCount }} place{{ usageCount === 1 ? '' : 's' }} in this template</span>
         </BFormGroup>
 
         <div class="editor-block">
@@ -59,7 +43,7 @@
             <BButton variant="outline-primary" size="sm" @click="addField">+ Add Field</BButton>
           </div>
           <p class="block-hint">
-            Fields available for each instance of this component.
+            Renaming or removing a field here updates every existing "{{ selected }}" usage on Save.
             <code>datasource</code> type renders a dropdown of tab datasource names at use time.
           </p>
 
@@ -133,56 +117,27 @@
         </div>
 
         <div class="editor-footer">
-          <BButton variant="primary" size="sm" :disabled="!isDirty" @click="saveComponent">Save Component</BButton>
-          <BButton v-if="isDirty" variant="outline-secondary" size="sm" @click="loadDraft">Discard</BButton>
+          <BButton variant="primary" size="sm" :disabled="!isDirty || !usageCount" @click="saveComponent">Save Component</BButton>
+          <BButton v-if="isDirty" variant="outline-secondary" size="sm" @click="loadDraft(selected)">Discard</BButton>
           <span v-if="isDirty" class="dirty-msg">Unsaved changes</span>
-          <BButton variant="outline-danger" size="sm" class="ms-auto" @click="deleteComponent">Delete Component</BButton>
-        </div>
-      </div>
-
-      <div class="editor-placeholder" v-else>
-        <div class="placeholder-inner">
-          <div class="placeholder-icon">🧩</div>
-          <p>Select a component to edit<br />or create a new one.</p>
+          <span v-else-if="!usageCount" class="dirty-msg">Not used anywhere yet — nothing to save</span>
         </div>
       </div>
 
     </div>
-
-    <!-- New component modal -->
-    <BModal
-      v-model="showAdd"
-      title="New Component"
-      ok-title="Create"
-      ok-variant="primary"
-      cancel-variant="outline-secondary"
-      @ok.prevent="confirmAdd"
-    >
-      <BFormGroup label="Component Name" description="No spaces, e.g. BarChart">
-        <BFormInput v-model="newName" placeholder="MyComponent" @keyup.enter="confirmAdd" />
-      </BFormGroup>
-      <BFormGroup label="Display Label" class="mt-3">
-        <BFormInput v-model="newLabel" placeholder="e.g. My Component" @keyup.enter="confirmAdd" />
-      </BFormGroup>
-      <BAlert v-model="addError" variant="danger" class="mt-3 mb-0">{{ addError }}</BAlert>
-    </BModal>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, inject } from 'vue'
-import { BModal, BFormInput, BFormSelect, BFormCheckbox, BButton, BFormGroup, BListGroup, BListGroupItem, BTable, BBadge, BAlert } from 'bootstrap-vue-next'
+import { ref, computed, inject } from 'vue'
+import { BFormInput, BFormSelect, BFormCheckbox, BButton, BFormGroup, BListGroup, BListGroupItem, BTable, BBadge } from 'bootstrap-vue-next'
 import { ADAPT_COMPONENTS } from '../AdaptComponents/index.js'
-import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
+import { useLayoutEditor, getAtPath } from '../../composables/useLayoutEditor.js'
 
 const meta = inject('meta')
 const { setValue, deleteNode } = useLayoutEditor(meta)
 
-const selected = ref(null)
-const showAdd  = ref(false)
-const newName  = ref('')
-const newLabel = ref('')
-const addError = ref('')
+const componentNames = computed(() => Object.keys(ADAPT_COMPONENTS))
 
 const fieldColumns = [
   { key: 'key',     label: 'Key' },
@@ -191,37 +146,58 @@ const fieldColumns = [
   { key: 'remove',  label: '',        thStyle: 'width:36px' },
 ]
 
-// ── Computed ──────────────────────────────────────────────────────────────────
+const TYPE_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
 
-const adaptLibrary   = computed(() => meta?.value?.layout?.adaptLibrary ?? {})
-const componentNames = computed(() => Object.keys(adaptLibrary.value))
-const currentDef     = computed(() => selected.value ? adaptLibrary.value[selected.value] ?? null : null)
-
-// Local, unsaved copy of the selected component's definition. Edits below only
-// touch `draft` — nothing reaches `meta` until Save Component is clicked.
-const draft = ref({ label: '', fields: [] })
-
-function loadDraft() {
-  draft.value = {
-    label: currentDef.value?.label ?? '',
-    // `_originalKey` tracks each field's last-saved key so saveComponent() can
-    // tell renames/removals apart from brand-new fields; it never reaches meta.
-    fields: (currentDef.value?.fields ?? []).map(f => ({ ...f, _originalKey: f.key })),
+// ── Usage index ───────────────────────────────────────────────────────────────
+// Single walk of layout.viz, built once and kept in sync reactively, mapping
+// component name -> every path where a node with that `component` lives.
+// saveComponent() looks paths up here instead of re-walking the tree.
+const usageIndex = computed(() => {
+  const index = {}
+  function walk(node, path) {
+    if (Array.isArray(node)) { node.forEach((child, i) => walk(child, [...path, i])); return }
+    if (!node || typeof node !== 'object') return
+    if (typeof node.component === 'string') {
+      (index[node.component] ??= []).push(path)
+    }
+    for (const key of Object.keys(node)) {
+      const value = node[key]
+      if (value && typeof value === 'object') walk(value, [...path, key])
+    }
   }
+  if (meta?.value?.layout?.viz) walk(meta.value.layout.viz, ['viz'])
+  return index
+})
+
+function usageCountFor(name) { return (usageIndex.value[name] ?? []).length }
+
+// ── Selection + draft ────────────────────────────────────────────────────────
+// The field list being edited is local/session-only: there's no persisted
+// "component schema" anywhere in meta, so `savedSnapshot` (not meta) is the
+// baseline `isDirty` compares against, seeded from the static ADAPT_COMPONENTS
+// definition and rebased to the draft after every successful save.
+const selected      = ref(componentNames.value[0] ?? null)
+const draft         = ref({ fields: [] })
+const savedSnapshot = ref([])
+
+function loadDraft(name) {
+  const fields = (ADAPT_COMPONENTS[name]?.fields ?? []).map(f => ({ ...f }))
+  savedSnapshot.value = fields
+  draft.value = { fields: fields.map(f => ({ ...f, _originalKey: f.key })) }
 }
+if (selected.value) loadDraft(selected.value)
+
+const usageCount = computed(() => usageCountFor(selected.value))
 
 const isDirty = computed(() => {
-  const committed = currentDef.value?.fields ?? []
-  if (draft.value.label !== (currentDef.value?.label ?? '')) return true
+  const committed = savedSnapshot.value
   if (draft.value.fields.length !== committed.length) return true
   return draft.value.fields.some((f, i) =>
     f.key !== committed[i]?.key || f.type !== committed[i]?.type || f.default !== committed[i]?.default
   )
 })
 
-const hasDatasourceField = computed(() =>
-  draft.value.fields.some(f => f.type === 'datasource')
-)
+const hasDatasourceField = computed(() => draft.value.fields.some(f => f.type === 'datasource'))
 
 const availableDatasources = computed(() => {
   const mainPanel = meta?.value?.layout?.viz?.['main-panel'] ?? {}
@@ -238,72 +214,13 @@ const availableDatasources = computed(() => {
   return [...names]
 })
 
-// Seed defaults when template loads
-onMounted(() => { if (meta?.value?.layout) seedBuiltins() })
-watch(() => meta?.value?.layout, (layout) => { if (layout) seedBuiltins() })
-
 // ── Actions ───────────────────────────────────────────────────────────────────
-
-function seedBuiltins() {
-  if (!meta?.value?.layout) return
-  if (!meta.value.layout.adaptLibrary) {
-    setValue(['adaptLibrary'], {})
-  }
-  for (const [name, def] of Object.entries(ADAPT_COMPONENTS)) {
-    if (!adaptLibrary.value[name]) {
-      setValue(['adaptLibrary', name], {
-        label: def.label,
-        fields: def.fields.map(f => ({ ...f })),
-      })
-    }
-  }
-  if (!selected.value) selected.value = componentNames.value[0] ?? null
-  loadDraft()
-}
 
 function selectComponent(name) {
   if (name === selected.value) return
   if (isDirty.value && !confirm(`Discard unsaved changes to "${selected.value}"?`)) return
   selected.value = name
-  loadDraft()
-}
-
-function openAdd() {
-  newName.value  = ''
-  newLabel.value = ''
-  addError.value = ''
-  showAdd.value  = true
-}
-
-function confirmAdd() {
-  const name  = newName.value.trim()
-  const label = newLabel.value.trim() || name
-  if (!name)                    { addError.value = 'Component name is required.'; return }
-  if (/\s/.test(name))          { addError.value = 'Name cannot contain spaces.'; return }
-  if (adaptLibrary.value[name]) { addError.value = `"${name}" already exists.`; return }
-
-  if (!meta?.value?.layout?.adaptLibrary) {
-    setValue(['adaptLibrary'], {})
-  }
-  setValue(['adaptLibrary', name], { label, fields: [] })
-  selected.value = name
-  loadDraft()
-  showAdd.value  = false
-}
-
-const TYPE_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
-
-// Visits every node anywhere in the layout tree (left-panel, main-panel, nested
-// containers, ...) whose `component` matches, so a save below stays in sync with
-// every instance of that component type, not just visualization-tab cells.
-function forEachUsage(componentName, visit) {
-  function walk(node) {
-    if (Array.isArray(node)) { node.forEach(walk); return }
-    if (!node || typeof node !== 'object') return
-    if (node.component === componentName) visit(node)
-    for (const value of Object.values(node)) walk(value)
-  }
-  walk(meta?.value?.layout)
+  loadDraft(name)
 }
 
 function addField() {
@@ -318,44 +235,45 @@ function removeField(i) {
   draft.value.fields.splice(i, 1)
 }
 
-// Commits the draft to meta.layout.adaptLibrary and propagates any field
-// renames/removals/additions to every existing usage of this component.
+// Applies every field add/rename/remove directly to each real usage path in
+// layout.viz via setValue/deleteNode — no separate library node is written.
 function saveComponent() {
-  const name = selected.value
-  if (!name) return
+  const name  = selected.value
+  const paths = usageIndex.value[name] ?? []
+  if (!name || !paths.length) return
 
-  const committedKeys = new Set((currentDef.value?.fields ?? []).map(f => f.key))
+  const committedKeys     = new Set(savedSnapshot.value.map(f => f.key))
   const draftOriginalKeys = new Set(draft.value.fields.map(f => f._originalKey).filter(Boolean))
 
   for (const f of draft.value.fields) {
     if (!f._originalKey) {
       const defaultVal = f.default !== undefined ? f.default : (TYPE_DEFAULTS[f.type] ?? '')
-      forEachUsage(name, node => { if (!(f.key in node)) node[f.key] = defaultVal })
+      for (const path of paths) {
+        const node = getAtPath(meta.value.layout, path)
+        if (!(f.key in node)) setValue([...path, f.key], defaultVal)
+      }
     } else if (f._originalKey !== f.key) {
-      forEachUsage(name, node => {
+      for (const path of paths) {
+        const node = getAtPath(meta.value.layout, path)
         if (f._originalKey in node) {
-          node[f.key] = node[f._originalKey]
-          delete node[f._originalKey]
+          setValue([...path, f.key], node[f._originalKey])
+          deleteNode([...path, f._originalKey])
         }
-      })
+      }
     }
   }
+
   for (const key of committedKeys) {
     if (!draftOriginalKeys.has(key)) {
-      forEachUsage(name, node => { delete node[key] })
+      for (const path of paths) {
+        const node = getAtPath(meta.value.layout, path)
+        if (key in node) deleteNode([...path, key])
+      }
     }
   }
 
-  setValue(['adaptLibrary', name, 'label'], draft.value.label)
-  setValue(['adaptLibrary', name, 'fields'], draft.value.fields.map(({ _originalKey, ...f }) => f))
-  loadDraft()
-}
-
-function deleteComponent() {
-  if (!confirm(`Delete component "${selected.value}"?`)) return
-  deleteNode(['adaptLibrary', selected.value])
-  selected.value = null
-  loadDraft()
+  savedSnapshot.value  = draft.value.fields.map(({ _originalKey, ...f }) => f)
+  draft.value.fields   = draft.value.fields.map(f => ({ ...f, _originalKey: f.key }))
 }
 </script>
 
@@ -371,26 +289,12 @@ function deleteComponent() {
 .panel-title    { font-size: 17px; font-weight: 700; color: #111; margin: 0 0 4px; }
 .panel-subtitle { font-size: 12px; color: #6b7280; margin: 0; line-height: 1.5; }
 
-/* Empty state */
-.empty-state {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  color: #6b7280;
-  padding: 40px;
-}
-.empty-icon { font-size: 40px; }
-.empty-state p { font-size: 13px; margin: 0; }
-
 /* Body */
 .panel-body { display: flex; flex: 1; overflow: hidden; }
 
 /* ── Component list ── */
 .comp-list {
-  width: 210px;
+  width: 230px;
   flex-shrink: 0;
   border-right: 1px solid #e5e7eb;
   display: flex;
@@ -416,8 +320,6 @@ function deleteComponent() {
 .comp-name { font-size: 12px; font-weight: 600; font-family: monospace; }
 .dirty-dot { color: #f59e0b; font-size: 8px; margin-left: 5px; vertical-align: middle; }
 .comp-sub { font-size: 11px; opacity: 0.65; }
-
-.add-comp-btn { width: 100%; border-style: dashed; }
 
 /* ── Editor ── */
 .comp-editor {
@@ -463,6 +365,7 @@ function deleteComponent() {
   border-radius: 5px;
   display: inline-block;
 }
+.usage-note { font-size: 11px; color: #9ca3af; margin-left: 10px; }
 
 /* Fields table */
 .fields-table { max-width: 600px; }
@@ -501,16 +404,4 @@ function deleteComponent() {
 
 .editor-footer { display: flex; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid #f0f0f0; }
 .dirty-msg { font-size: 11px; color: #b45309; }
-
-/* Placeholder */
-.editor-placeholder {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #9ca3af;
-}
-.placeholder-inner { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.placeholder-icon { font-size: 36px; }
-.placeholder-inner p { font-size: 13px; line-height: 1.6; margin: 0; }
 </style>
