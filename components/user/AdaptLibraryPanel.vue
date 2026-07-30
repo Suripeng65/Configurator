@@ -27,9 +27,9 @@
             button
             :active="selected === name"
             class="comp-item"
-            @click="selected = name"
+            @click="selectComponent(name)"
           >
-            <span class="comp-name">{{ name }}</span>
+            <span class="comp-name">{{ name }}<span v-if="selected === name && isDirty" class="dirty-dot" title="Unsaved changes">●</span></span>
             <span class="comp-sub">{{ adaptLibrary[name]?.label }}</span>
           </BListGroupItem>
         </BListGroup>
@@ -38,7 +38,7 @@
       </aside>
 
       <!-- Right: editor -->
-      <div class="comp-editor" v-if="selected && currentDef">
+      <div class="comp-editor" v-if="selected && draft">
 
         <BFormGroup label="Component Name" label-class="block-label">
           <code class="comp-key">{{ selected }}</code>
@@ -46,10 +46,10 @@
 
         <BFormGroup label="Display Label" label-class="block-label">
           <BFormInput
-            :model-value="currentDef.label"
+            :model-value="draft.label"
             placeholder="e.g. Bar Chart"
             style="max-width:320px"
-            @change="setLabel($event.target.value)"
+            @change="draft.label = $event.target.value"
           />
         </BFormGroup>
 
@@ -64,8 +64,8 @@
           </p>
 
           <BTable
-            v-if="currentDef.fields?.length"
-            :items="currentDef.fields"
+            v-if="draft.fields.length"
+            :items="draft.fields"
             :fields="fieldColumns"
             small
             class="fields-table"
@@ -133,7 +133,10 @@
         </div>
 
         <div class="editor-footer">
-          <BButton variant="outline-danger" size="sm" @click="deleteComponent">Delete Component</BButton>
+          <BButton variant="primary" size="sm" :disabled="!isDirty" @click="saveComponent">Save Component</BButton>
+          <BButton v-if="isDirty" variant="outline-secondary" size="sm" @click="loadDraft">Discard</BButton>
+          <span v-if="isDirty" class="dirty-msg">Unsaved changes</span>
+          <BButton variant="outline-danger" size="sm" class="ms-auto" @click="deleteComponent">Delete Component</BButton>
         </div>
       </div>
 
@@ -194,8 +197,30 @@ const adaptLibrary   = computed(() => meta?.value?.layout?.adaptLibrary ?? {})
 const componentNames = computed(() => Object.keys(adaptLibrary.value))
 const currentDef     = computed(() => selected.value ? adaptLibrary.value[selected.value] ?? null : null)
 
+// Local, unsaved copy of the selected component's definition. Edits below only
+// touch `draft` — nothing reaches `meta` until Save Component is clicked.
+const draft = ref({ label: '', fields: [] })
+
+function loadDraft() {
+  draft.value = {
+    label: currentDef.value?.label ?? '',
+    // `_originalKey` tracks each field's last-saved key so saveComponent() can
+    // tell renames/removals apart from brand-new fields; it never reaches meta.
+    fields: (currentDef.value?.fields ?? []).map(f => ({ ...f, _originalKey: f.key })),
+  }
+}
+
+const isDirty = computed(() => {
+  const committed = currentDef.value?.fields ?? []
+  if (draft.value.label !== (currentDef.value?.label ?? '')) return true
+  if (draft.value.fields.length !== committed.length) return true
+  return draft.value.fields.some((f, i) =>
+    f.key !== committed[i]?.key || f.type !== committed[i]?.type || f.default !== committed[i]?.default
+  )
+})
+
 const hasDatasourceField = computed(() =>
-  currentDef.value?.fields?.some(f => f.type === 'datasource') ?? false
+  draft.value.fields.some(f => f.type === 'datasource')
 )
 
 const availableDatasources = computed(() => {
@@ -233,6 +258,14 @@ function seedBuiltins() {
     }
   }
   if (!selected.value) selected.value = componentNames.value[0] ?? null
+  loadDraft()
+}
+
+function selectComponent(name) {
+  if (name === selected.value) return
+  if (isDirty.value && !confirm(`Discard unsaved changes to "${selected.value}"?`)) return
+  selected.value = name
+  loadDraft()
 }
 
 function openAdd() {
@@ -254,18 +287,15 @@ function confirmAdd() {
   }
   setValue(['adaptLibrary', name], { label, fields: [] })
   selected.value = name
+  loadDraft()
   showAdd.value  = false
-}
-
-function setLabel(label) {
-  setValue(['adaptLibrary', selected.value, 'label'], label)
 }
 
 const TYPE_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
 
 // Visits every node anywhere in the layout tree (left-panel, main-panel, nested
-// containers, ...) whose `component` matches, so field edits below stay in sync
-// with every instance of that component type, not just visualization-tab cells.
+// containers, ...) whose `component` matches, so a save below stays in sync with
+// every instance of that component type, not just visualization-tab cells.
 function forEachUsage(componentName, visit) {
   function walk(node) {
     if (Array.isArray(node)) { node.forEach(walk); return }
@@ -277,43 +307,55 @@ function forEachUsage(componentName, visit) {
 }
 
 function addField() {
-  const fields = [...(currentDef.value.fields ?? [])]
-  const newField = { key: `field${fields.length + 1}`, type: 'string' }
-  fields.push(newField)
-  setValue(['adaptLibrary', selected.value, 'fields'], fields)
-
-  const defaultVal = newField.default !== undefined ? newField.default : (TYPE_DEFAULTS[newField.type] ?? '')
-  forEachUsage(selected.value, node => {
-    if (!(newField.key in node)) node[newField.key] = defaultVal
-  })
+  draft.value.fields.push({ key: `field${draft.value.fields.length + 1}`, type: 'string', _originalKey: null })
 }
 
 function setFieldProp(i, prop, value) {
-  const prevKey = currentDef.value.fields[i].key
-  const fields = currentDef.value.fields.map((f, idx) => idx === i ? { ...f, [prop]: value } : f)
-  setValue(['adaptLibrary', selected.value, 'fields'], fields)
-
-  if (prop === 'key' && value && value !== prevKey) {
-    forEachUsage(selected.value, node => {
-      if (prevKey in node) {
-        node[value] = node[prevKey]
-        delete node[prevKey]
-      }
-    })
-  }
+  draft.value.fields[i][prop] = value
 }
 
 function removeField(i) {
-  const removedKey = currentDef.value.fields[i].key
-  const fields = currentDef.value.fields.filter((_, idx) => idx !== i)
-  setValue(['adaptLibrary', selected.value, 'fields'], fields)
-  forEachUsage(selected.value, node => { delete node[removedKey] })
+  draft.value.fields.splice(i, 1)
+}
+
+// Commits the draft to meta.layout.adaptLibrary and propagates any field
+// renames/removals/additions to every existing usage of this component.
+function saveComponent() {
+  const name = selected.value
+  if (!name) return
+
+  const committedKeys = new Set((currentDef.value?.fields ?? []).map(f => f.key))
+  const draftOriginalKeys = new Set(draft.value.fields.map(f => f._originalKey).filter(Boolean))
+
+  for (const f of draft.value.fields) {
+    if (!f._originalKey) {
+      const defaultVal = f.default !== undefined ? f.default : (TYPE_DEFAULTS[f.type] ?? '')
+      forEachUsage(name, node => { if (!(f.key in node)) node[f.key] = defaultVal })
+    } else if (f._originalKey !== f.key) {
+      forEachUsage(name, node => {
+        if (f._originalKey in node) {
+          node[f.key] = node[f._originalKey]
+          delete node[f._originalKey]
+        }
+      })
+    }
+  }
+  for (const key of committedKeys) {
+    if (!draftOriginalKeys.has(key)) {
+      forEachUsage(name, node => { delete node[key] })
+    }
+  }
+
+  setValue(['adaptLibrary', name, 'label'], draft.value.label)
+  setValue(['adaptLibrary', name, 'fields'], draft.value.fields.map(({ _originalKey, ...f }) => f))
+  loadDraft()
 }
 
 function deleteComponent() {
   if (!confirm(`Delete component "${selected.value}"?`)) return
   deleteNode(['adaptLibrary', selected.value])
   selected.value = null
+  loadDraft()
 }
 </script>
 
@@ -372,6 +414,7 @@ function deleteComponent() {
 .comp-item { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
 
 .comp-name { font-size: 12px; font-weight: 600; font-family: monospace; }
+.dirty-dot { color: #f59e0b; font-size: 8px; margin-left: 5px; vertical-align: middle; }
 .comp-sub { font-size: 11px; opacity: 0.65; }
 
 .add-comp-btn { width: 100%; border-style: dashed; }
@@ -456,7 +499,8 @@ function deleteComponent() {
 .ds-hint-label { font-size: 11px; color: #7c3aed; font-weight: 600; }
 .ds-chip { font-family: monospace; color: #5b21b6 !important; background: #ede9fe !important; }
 
-.editor-footer { padding-top: 8px; border-top: 1px solid #f0f0f0; }
+.editor-footer { display: flex; align-items: center; gap: 8px; padding-top: 8px; border-top: 1px solid #f0f0f0; }
+.dirty-msg { font-size: 11px; color: #b45309; }
 
 /* Placeholder */
 .editor-placeholder {
