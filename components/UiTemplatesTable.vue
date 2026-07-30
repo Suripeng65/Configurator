@@ -27,6 +27,10 @@ function goToEditor(event) {
   const row = event?.item ?? event
   router.push({name: "UiTemplate Edit", params: {id: row.id}})
 }
+
+function duplicate(item) {
+  router.push({ name: 'UiTemplate Create', state: { sourceId: item.id } })
+}
 </script>
 <template>
   <BTable
@@ -54,6 +58,7 @@ function goToEditor(event) {
     </template>
     <template #cell(actions)="{ item }">
       <BButton size="sm" variant="primary" @click.stop="goToEditor(item)">Open →</BButton>
+      <BButton size="sm" variant="outline-secondary" class="ms-1" @click.stop="duplicate(item)">Duplicate</BButton>
     </template>
   </BTable>
 </template>

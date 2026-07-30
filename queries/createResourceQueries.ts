@@ -55,7 +55,11 @@ export function createResourceQueries<T extends { id: string }>(
     function useCreate() {
         const cache = useQueryCache()
         return useMutation({
-            mutation: (payload: Partial<T>) => api.post<T>(`/${resource}`, payload).then((r) => r.data),
+            mutation: (payload: Partial<T>) => {
+                const body = { ...payload }
+                if ((body as any).id == null) delete (body as any).id
+                return api.post<T>(`/${resource}`, body).then((r) => r.data)
+            },
             onSettled() {
                 cache.invalidateQueries({ key: KEYS.list() })
             },

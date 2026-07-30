@@ -130,7 +130,7 @@ const router = createRouter({
               path: 'create',
               name: 'UiTemplate Create',
               component: UITemplateContainer,
-              // redirect: 'DetailsCreate',
+              redirect: { name: 'UiTemplate Create Details' },
               meta: {
                 breadcrumb: 'Create', model: "UiTemplate", action: "Create"
               },
@@ -146,7 +146,7 @@ const router = createRouter({
                 },
                 {
                   path: 'layout',
-                  name: 'UiTemplate Create Layous',
+                  name: 'UiTemplate Create Layout',
                   component: LayoutEditor,
                   meta: {
                     breadcrumb: 'Layout',

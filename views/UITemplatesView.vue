@@ -33,7 +33,7 @@ function goToEditor(event) {
   const item = event?.item ?? event
   store.template = item
   router.push({
-    name: 'UITemplateEdit',
+    name: 'UiTemplate Edit',
     params: { id: item.id }
   })
 }

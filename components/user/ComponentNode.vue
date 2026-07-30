@@ -122,7 +122,7 @@
       <BButton v-else variant="outline-secondary" size="sm" class="cn-dashed-btn" @click="showAddField = true">+ field</BButton>
 
       <!-- Recursive children -->
-      <div v-if="isContainer" class="cn-children">
+      <div class="cn-children">
         <ComponentNode
           v-for="(child, idx) in (item.contents || [])"
           :key="idx"
@@ -287,7 +287,8 @@ function buildFromDef(type, name) {
 function commitAddChild() {
   const type = newChildType.value
   if (!type) return
-  const newIdx = (props.item.contents ?? []).length
+  if (!Array.isArray(props.item.contents)) setValue([...props.path, 'contents'], [])
+  const newIdx = props.item.contents.length
   const config = buildFromDef(type, newChildName.value.trim())
   addChild([...props.path, 'contents'], null, 'object')
   setValue([...props.path, 'contents', newIdx], config)
