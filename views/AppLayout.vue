@@ -120,6 +120,7 @@ onMounted(()=>{
           <RouterLink :to="`/uitemplate/${route.params.id}/details`"     class="nav-sub" active-class="nav-sub-active">- Details</RouterLink>
           <RouterLink :to="`/uitemplate/${route.params.id}/layout`"      class="nav-sub" active-class="nav-sub-active">- Layout</RouterLink>
           <RouterLink :to="`/uitemplate/${route.params.id}/datasource`" class="nav-sub" active-class="nav-sub-active">- Datasources</RouterLink>
+          <RouterLink :to="`/uitemplate/${route.params.id}/adaptlibrary`" class="nav-sub" active-class="nav-sub-active">- Adapt Library</RouterLink>
 <!--          <RouterLink :to="`/uitemplates/${route.params.id}/apis`"        class="nav-sub" active-class="nav-sub-active">- APIs</RouterLink>-->
 <!--          <RouterLink :to="`/uitemplates/${route.params.id}/instances`"   class="nav-sub" active-class="nav-sub-active">Instances</RouterLink>-->
         </template>

@@ -12,6 +12,7 @@ import UITemplateContainer from "@src/views/UITemplateContainer.vue";
 import LayoutEditor from "@src/views/LayoutEditor.vue";
 import DatasourcesList from "@src/views/DatasourcesList.vue";
 import DatasourceEditor from "@src/views/DatasourceEditor.vue";
+import AdaptLibraryPanel from "@src/components/user/AdaptLibraryPanel.vue";
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -124,6 +125,15 @@ const router = createRouter({
                     },
                   }]
                 },
+                {
+                  path: 'adaptlibrary',
+                  name: 'UiTemplate Edit Adapt Library',
+                  component: AdaptLibraryPanel,
+                  meta: {
+                    breadcrumb: 'Adapt Library',
+                    editorSection: 'AdaptLibrary'
+                  },
+                },
               ]
             },
             {
@@ -178,6 +188,15 @@ const router = createRouter({
                       editorSection: 'Datasource'
                     },
                   }]
+                },
+                {
+                  path: 'adaptlibrary',
+                  name: 'UiTemplate Create Adapt Library',
+                  component: AdaptLibraryPanel,
+                  meta: {
+                    breadcrumb: 'Adapt Library',
+                    editorSection: 'AdaptLibrary'
+                  },
                 },
               ]
             }
