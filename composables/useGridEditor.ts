@@ -7,7 +7,22 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     if (!key || !mainPanel.value?.[key]) {
       return []
     }
-    return parseGridRows(mainPanel.value?.[key])
+    const rows = parseGridRows(mainPanel.value?.[key])
+    // Seed each field with its previously-saved value (from chartMeta, the raw
+    // stored cell) when one exists. Fields with no stored value are left
+    // `undefined` so the input/radio renders empty, waiting for user input,
+    // instead of pre-filling a schema default before the user has chosen one.
+    for (const row of rows) {
+      for (const cell of row.cells) {
+        const def = adaptLibrary.value[cell.chart]
+        for (const field of def?.fields ?? []) {
+          if (cell[field.key] === undefined && field.key in (cell.chartMeta ?? {})) {
+            cell[field.key] = cell.chartMeta[field.key]
+          }
+        }
+      }
+    }
+    return rows
   })
   const FIELD_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
   function cellId(ri, ci) { return `dashboard-cell-${ri + 1}-${ci + 1}` }
