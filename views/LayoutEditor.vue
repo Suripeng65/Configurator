@@ -1,18 +1,156 @@
+<script setup lang="ts">
+import { inject, ref, computed, watch } from 'vue'
+import useEditorWorkflow from "@src/composables/EditorWorkflow";
+import { uiTemplatesQueries } from '@src/queries'
+import { ADAPT_COMPONENTS } from '@src/components/AdaptComponents/index';
+import { useLayoutEditor } from '@src/composables/useLayoutEditor.js'
+import { useGridEditor } from '@src/composables/useGridEditor'
+import {findComponents} from "@src/utils/datasources.util.ts";
+import ComponentNode from '@src/components/user/ComponentNode.vue'
+import { useTabManager }   from '@src/composables/useTabManager.js'
+
+const meta  = inject<any>('meta')
+const { setValue, addChild, deleteNode } = useLayoutEditor(meta)
+
+console.log(meta)
+
+//main panel variables
+const mainPanel = computed(() => meta?.value?.layout?.viz?.['main-panel'] ?? null)
+// Left panel variables
+const leftPanel         = computed(() => meta?.value?.layout?.viz?.['left-panel'] ?? {})
+const leftTabKey        = computed(() => leftPanel.value?.tabs?.[0] ?? 'tab-one')
+const leftTabContent    = computed(() => leftPanel.value[leftTabKey.value] ?? {})
+const monitorPanelIndex = computed(() => (leftTabContent.value.contents ?? []).findIndex(c => c.component === 'MonitorPanel'))
+const monitorPanel      = computed(() => monitorPanelIndex.value >= 0 ? leftTabContent.value.contents[monitorPanelIndex.value] : null)
+const monitorPanelPath  = computed(() => ['viz', 'left-panel', leftTabKey.value, 'contents', monitorPanelIndex.value])
+
+const {data} = useEditorWorkflow(uiTemplatesQueries, meta)
+const {
+  tabList, activeTabIndex, activeTabKey,
+  localTabTitles, editingTab, editTitle,
+  startEdit, commitEdit, createTab, deleteTab
+} = useTabManager(mainPanel, { setValue, deleteNode, addChild })
+
+const adaptLibrary = computed(()=>{
+  return Object.entries(ADAPT_COMPONENTS).reduce((acc, curr)=>{
+    const [name, def] = curr
+    acc[name] = {
+      id:def?.id ?? null,
+      label: def.label,
+      fields: def.fields.map(field => ({ ...field }))
+    }
+    return acc
+  },{})
+})
+
+const {
+  cellId,
+  gridRows,
+  clampRowSizes,
+  updateCellSize,
+  addCell,
+  addRow,
+  removeRow,
+  updateCellChart,
+  updateCellDatasource,
+  removeCell
+  // buildTabConfig
+} = useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
+
+const datasources = computed(()=>{ 
+  return findComponents(meta.value.layout, "Datasource")
+})
+
+const DATASOURCES = computed(() => {
+  const result = findComponents(meta.value.layout, "Datasource");
+  return Array.from(new Set(result.map(source => source.matchedObject.name)))
+})
+
+const accessibleDatasources = computed(()=>{
+  return datasources.value.filter((ds)=>{
+    const pattern = 'viz.main-panel.datasources'
+    const key = activeTabKey.value
+
+    //only return datasource that are globally accessible and the tab specific ones
+    return ds.fullPathArray.includes(key) || ds.path.match(pattern)
+  })
+})
+  const FIELD_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
+
+function buildTabConfig() {
+  const key  = activeTabKey.value
+  const base = mainPanel.value?.[key] ?? {}
+  const title = base.title ?? key
+
+  const layoutRows = gridRows.value.map((row, ri) => ({
+    size: String(row.size),
+    cells: row.cells.map((cell, ci) => {
+      const obj = { id: cellId(ri, ci) }
+      if (row.cells.length > 1) obj.size = String(cell.size)
+      return obj
+    }),
+  }))
+
+  const existingGc    = base.contents?.find(c => c.component === 'GridContainer')
+  const existingCells = existingGc?.contents ?? []
+  console.log("using this gridRows to build layout...: ",gridRows)
+  const contents: any[]= []
+  gridRows.value.forEach((row:any, ri:number) => {
+    row.cells.forEach((cell:any, ci:number) => {
+      const id         = cellId(ri, ci)
+      const prev       = existingCells.find(c => c.cell === id)
+      const cellConfig = { ...(prev ?? {}), cell: id, component: cell.chart }
+      const adaptDef   = adaptLibrary.value[cell.chart]
+      
+      // Copy chart-specific properties from cell to cellConfig
+      if (adaptDef && adaptDef.fields) {
+        for (const field of adaptDef.fields) {
+          // Use the value from the cell object if it exists, otherwise use default
+          if (field.key in cell) {
+            cellConfig[field.key] = cell[field.key]
+          } else if (!(field.key in cellConfig)) {
+            cellConfig[field.key] = field.default !== undefined ? field.default : (FIELD_DEFAULTS[field.type] ?? '')
+          }
+        }
+      }
+      
+      if (!('datasourceName' in cellConfig)) cellConfig.datasourceName = '/'
+      contents.push(cellConfig)
+    })
+  })
+  let res = {
+    ...base,
+    title,
+    component: 'TabWrapper',
+    contents: [{ layouts: [{ id: 'layout-1', rows: layoutRows }], contents, component: 'GridContainer' }],
+    datasources: accessibleDatasources.value.filter((ds)=>ds.fullPathArray.includes(key)).map((ds)=>ds.matchedObject).reduce((curr, acc)=>{curr[acc.name] = acc; return curr}, {}),
+    'right-panel':     base['right-panel']     ?? { 'tab-array': [], defaultTab: null },
+    'generate-report': base['generate-report'] ?? [],
+  }
+  console.log("generating new tab layouts...", res)
+  return res
+}
+
+function saveTabLayout() {
+  const key = activeTabKey.value
+  if (!key) return
+  setValue(['viz', 'main-panel', key], buildTabConfig())
+}
+
+</script>
+
 <template>
   <div class="layout-editor">
-
-    <!-- Left: monitor parameters (inlined) -->
     <aside class="left-pane">
-      <div class="panel">
+      <!-- LEFT PANEL -->
+       <div class="panel">
         <div class="panel-header">
-          <h2 class="panel-title">Monitor Parameters</h2>
           <p class="panel-subtitle">
             Edit the left-panel filter sections. Double-click any section name to rename it.
             Expand a section to add filters, dropdowns, or nested groups.
           </p>
         </div>
-
-        <ComponentNode
+         <ComponentNode
           v-if="monitorPanel"
           :item="monitorPanel"
           :path="monitorPanelPath"
@@ -21,17 +159,14 @@
         <p v-else class="text-muted small fst-italic px-1 mt-3">No MonitorPanel found in left-panel config.</p>
       </div>
     </aside>
-
-    <div class="pane-divider" />
-
-    <!-- Right: visualization tabs -->
+    <div class="pane-divider" ></div>
     <BTabs
       v-model="activeTabIndex"
       class="right-pane"
       nav-class="layout-tab-nav"
       content-class="layout-tab-content"
     >
-      <BTab v-for="(tab, i) in tabList" :key="tab.key">
+      <BTab v-for="(tab, i) in tabList" :key="tab.key" :id="tab.key">
         <template #title>
           <input
             v-if="editingTab === tab.key"
@@ -42,10 +177,10 @@
             @mousedown.stop
             @keydown.stop
             @keyup.enter="e => e.target.blur()"
-            @keyup.escape="cancelEdit"
             @blur="commitEdit"
           />
           <span v-else @dblclick.stop="startEdit(tab.key, tab.title)">{{ localTabTitles[tab.key] ?? tab.title }}</span>
+          <!-- {{ tab.title }} -->
           <span
             v-if="activeTabIndex === i && editingTab !== tab.key"
             class="tab-close ms-2"
@@ -53,59 +188,88 @@
             title="Delete tab"
           >×</span>
         </template>
-
-        <!-- Tab body -->
         <div class="content-body">
-
-          <div class="tab-meta mb-3">
-            <span class="text-muted small">ID:</span>
-            <code class="tab-key-badge">{{ tab.key }}</code>
-          </div>
-
-          <!-- Grid builder -->
-          <BCard class="mb-3">
-            <template #header>
-              <div class="d-flex align-items-baseline gap-2 flex-wrap">
-                <strong class="small">Dashboard Layout</strong>
-                <span class="text-muted" style="font-size:11px">Rows are horizontal bands. Cells within a row split it vertically.</span>
-              </div>
-            </template>
-
-            <div class="grid-preview mb-3">
+           <BCard class="grid-card">
+            <div class="grid-preview">
               <div
-                v-for="(row, ri) in gridRows"
-                :key="ri"
-                class="preview-row"
-                :style="{ flex: row.size }"
-              >
-                <div
-                  v-for="(cell, ci) in row.cells"
-                  :key="ci"
-                  class="preview-cell"
-                  :style="{ flex: cell.size }"
+                  v-for="(row, ri) in gridRows"
+                  :key="ri"
+                  class="preview-row"
+                  :style="{ flex: row.size }"
                 >
-                  <span class="cell-id-label">{{ cellId(ri, ci) }}</span>
-                  <BFormSelect v-model="cell.chart" size="sm">
-                    <option v-for="c in CHART_TYPES" :key="c.v" :value="c.v">{{ c.l }}</option>
-                  </BFormSelect>
-                  <div class="d-flex align-items-center justify-content-between gap-1 mt-1">
+                  <div
+                    v-for="(cell, ci) in row.cells"
+                    :key="ci"
+                    class="preview-cell"
+                    :style="{ flex: cell.size }"
+                  >
+                   <!-- for each cell -->
+                    <div style="display:flex; flex-direction: row; justify-content: space-between;">
+                    <span class="cell-id-label">{{ cellId(ri, ci) }}</span>
+                    <BButton v-if="row.cells.length > 1" variant="link" size="sm" class="text-danger p-0 lh-1" @click="removeCell(ri, ci)" title="Remove cell">✕</BButton>
+                    <BButton v-else variant="link" size="sm" class="text-danger p-0 lh-1" @click="removeRow(ri)" title="Remove Row">X</BButton>
+
+                    </div>
+                    <BFormSelect :model-value="cell.chart" size="sm" @update:model-value="(val) => updateCellChart(ri, ci, val)">
+                      <option v-for="c in Object.keys(adaptLibrary)" :key="c" :value="c">{{ adaptLibrary[c].label }}</option>
+                    </BFormSelect>
+                    
+                    <BFormSelect :model-value="cell.datasourceName" size="sm" @update:model-value="(val) => updateCellDatasource(ri, ci, val)">
+                      <option v-for="ds in accessibleDatasources" :key="ds.path" :value="ds.matchedObject.name">
+                        {{ ds.matchedObject.name }} 
+                      </option>
+                    </BFormSelect>
+
+                     <div class="d-flex align-items-center justify-content-between gap-1 mt-1">
                     <BInputGroup size="sm">
                       <BInputGroupText>w</BInputGroupText>
-                      <BFormInput type="number" v-model.number="cell.size" min="5" max="95" style="width:46px" @change="clampCellSizes(ri)" />
+                      <BFormInput type="number" v-model.number="cell.size" min="5" max="95" style="width:46px" @change="updateCellSize(ri)" />
                       <BInputGroupText>%</BInputGroupText>
                     </BInputGroup>
-                    <BButton v-if="row.cells.length > 1" variant="link" size="sm" class="text-danger p-0 lh-1" @click="removeCell(ri, ci)" title="Remove cell">×</BButton>
+
+                    <!-- <BButton v-if="row.cells.length > 1" variant="link" size="sm" class="text-danger p-0 lh-1" @click="removeCell(ri, ci)" title="Remove cell">×</BButton> -->
+                  </div>
+                    <!-- Chart-specific properties -->
+                    <div v-if="cell.chart && adaptLibrary[cell.chart]" class="chart-properties">
+                      <div v-for="field in adaptLibrary[cell.chart].fields" :key="field.key" class="property-field">
+                        <!-- String field -->
+                        <BFormGroup v-if="field.type === 'string'" :label="field.key">
+                          <BFormInput 
+                            v-model="cell[field.key]" 
+                            size="sm"
+                            :placeholder="field.placeholder ?? ''"
+                          />
+                        </BFormGroup>
+                        
+                        <!-- Boolean field -->
+                        <BFormGroup v-else-if="field.type === 'boolean'" :label="field.key">
+                          <BFormRadioGroup
+                            v-model="cell[field.key]"
+                            :options="[{ text: 'True', value: true }, { text: 'False', value: false }]"
+                            >
+                          </BFormRadioGroup>
+                        </BFormGroup>
+                        
+                        <!-- Number field -->
+                        <BFormGroup v-else-if="field.type === 'number'" :label="field.key">
+                          <BFormInput 
+                            v-model.number="cell[field.key]" 
+                            type="number"
+                            size="sm"
+                            :placeholder="field.placeholder ?? ''" 
+                          />
+                        </BFormGroup>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
             </div>
-
             <div class="d-flex flex-column gap-1 mb-3">
               <div v-for="(row, ri) in gridRows" :key="ri" class="d-flex align-items-center gap-2 px-2 py-1 bg-light rounded">
-                <span class="text-muted small" style="min-width:46px">Row {{ ri + 1 }}</span>
+                <span class="text-muted small" style="min-width:60px">Row {{ ri + 1 }}</span>
                 <BInputGroup size="sm" style="width:auto">
                   <BInputGroupText>h</BInputGroupText>
-                  <BFormInput type="number" v-model.number="row.size" min="5" max="95" style="width:50px" @change="clampRowSizes" />
+                  <BFormInput type="number" v-model.number="row.size" min="5" max="95" style="width:60px" @change="clampRowSizes" />
                   <BInputGroupText>%</BInputGroupText>
                 </BInputGroup>
                 <BButton size="sm" variant="outline-secondary" :disabled="row.cells.length >= 4" @click="addCell(ri)">+ cell</BButton>
@@ -114,117 +278,19 @@
             </div>
 
             <BButton variant="outline-secondary" size="sm" :disabled="gridRows.length >= 6" @click="addRow">+ Add Row</BButton>
-          </BCard>
+           </BCard>
 
-          <!-- Cell configuration -->
-          <BCard v-if="storedCells.length" class="mb-3">
-            <template #header>
-              <div class="d-flex align-items-baseline gap-2 flex-wrap">
-                <strong class="small">Cell Configuration</strong>
-                <span class="text-muted" style="font-size:11px">Set field values for each chart cell in this tab.</span>
-              </div>
-            </template>
-
-            <div v-for="(cell, ci) in storedCells" :key="ci" class="cell-config" :class="{ 'mt-2': ci > 0 }">
-              <div class="d-flex align-items-center gap-2 px-3 py-2 bg-light border-bottom">
-                <code class="small text-primary">{{ cell.cell }}</code>
-                <strong class="small">{{ ADAPT_COMPONENTS[cell.component]?.label ?? cell.component }}</strong>
-              </div>
-              <div v-if="ADAPT_COMPONENTS[cell.component]?.fields?.length" class="px-3 py-2">
-                <BFormGroup
-                  v-for="field in ADAPT_COMPONENTS[cell.component].fields"
-                  :key="field.key"
-                  :label="field.key"
-                  label-cols="4"
-                  label-class="font-monospace small text-muted"
-                  class="mb-2"
-                >
-                  <BFormSelect
-                    v-if="field.type === 'datasource'"
-                    size="sm"
-                    :model-value="cell[field.key] ?? '/'"
-                    @update:model-value="setCellField(ci, field.key, $event)"
-                  >
-                    <option value="/">/ (default)</option>
-                    <option v-for="ds in storedDatasources" :key="ds" :value="ds">{{ ds }}</option>
-                  </BFormSelect>
-                  <BFormInput
-                    v-else-if="field.type === 'number'"
-                    type="number"
-                    size="sm"
-                    :model-value="cell[field.key] ?? (field.default ?? 0)"
-                    @change="setCellField(ci, field.key, Number($event.target.value))"
-                  />
-                  <BFormCheckbox
-                    v-else-if="field.type === 'boolean'"
-                    :model-value="cell[field.key] ?? (field.default ?? false)"
-                    @update:model-value="setCellField(ci, field.key, $event)"
-                  />
-                  <BFormInput
-                    v-else
-                    size="sm"
-                    :model-value="cell[field.key] ?? (field.default ?? '')"
-                    @change="setCellField(ci, field.key, $event.target.value)"
-                  />
-                </BFormGroup>
-              </div>
-              <div v-else class="px-3 py-2 text-muted small fst-italic">"{{ cell.component }}" has no adapt library fields defined.</div>
-            </div>
-          </BCard>
-
-          <BButton variant="primary" size="sm" @click="saveTab">Save Layout</BButton>
-
+           <BButton variant="primary" size="sm" @click="saveTabLayout">Save Tab</BButton>
         </div>
       </BTab>
-
-      <template #tabs-end>
+       <template #tabs-end>
         <li class="nav-item d-flex align-items-center">
           <BButton variant="link" size="sm" class="add-tab-btn" @click="createTab">+ Tab</BButton>
         </li>
       </template>
     </BTabs>
-
   </div>
 </template>
-
-<script setup>
-import { computed, inject } from 'vue'
-import { BTabs, BTab, BFormGroup, BFormInput, BFormSelect, BFormCheckbox, BInputGroup, BInputGroupText, BButton, BCard } from 'bootstrap-vue-next'
-import { useLayoutEditor } from '@src/composables/useLayoutEditor.js'
-import { useTabManager }   from '@src/composables/useTabManager.js'
-import { useGridBuilder, CHART_TYPES } from '@src/composables/useGridBuilder.js'
-import { ADAPT_COMPONENTS } from '@src/components/AdaptComponents/index.js'
-import ComponentNode from '@src/components/user/ComponentNode.vue'
-
-const vFocus = { mounted: (el) => el.focus() }
-
-const meta = inject('meta')
-const { setValue, deleteNode, addChild } = useLayoutEditor(meta)
-
-const mainPanel = computed(() => meta?.value?.layout?.viz?.['main-panel'] ?? null)
-
-const {
-  tabList, activeTabIndex, activeTabKey,
-  localTabTitles, editingTab, editTitle,
-  startEdit, commitEdit, cancelEdit,
-  deleteTab, createTab,
-} = useTabManager(mainPanel, { setValue, deleteNode, addChild })
-
-const {
-  gridRows, cellId,
-  addRow, removeRow, addCell, removeCell, clampRowSizes, clampCellSizes,
-  storedCells, storedDatasources, setCellField,
-  saveTab,
-} = useGridBuilder(activeTabKey, mainPanel, { setValue })
-
-// ── Monitor Parameters 
-const leftPanel         = computed(() => meta?.value?.layout?.viz?.['left-panel'] ?? {})
-const leftTabKey        = computed(() => leftPanel.value?.tabs?.[0] ?? 'tab-one')
-const leftTabContent    = computed(() => leftPanel.value[leftTabKey.value] ?? {})
-const monitorPanelIndex = computed(() => (leftTabContent.value.contents ?? []).findIndex(c => c.component === 'MonitorPanel'))
-const monitorPanel      = computed(() => monitorPanelIndex.value >= 0 ? leftTabContent.value.contents[monitorPanelIndex.value] : null)
-const monitorPanelPath  = computed(() => ['viz', 'left-panel', leftTabKey.value, 'contents', monitorPanelIndex.value])
-</script>
 
 <style scoped>
 .layout-editor {
@@ -236,7 +302,7 @@ const monitorPanelPath  = computed(() => ['viz', 'left-panel', leftTabKey.value,
 
 /* ── Left pane ── */
 .left-pane {
-  width: 300px;
+  width: 450px;
   flex-shrink: 0;
   overflow-y: auto;
   background: #fff;
@@ -330,22 +396,12 @@ const monitorPanelPath  = computed(() => ['viz', 'left-panel', leftTabKey.value,
 /* ── Tab body ── */
 .content-body { padding: 20px 28px 32px; }
 
-.tab-meta { display: flex; align-items: center; gap: 6px; }
-.tab-key-badge {
-  font-size: 11px;
-  background: #f3f4f6;
-  color: #6b7280;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-family: monospace;
-}
-
 /* ── Grid preview ── */
 .grid-preview {
   display: flex;
   flex-direction: column;
   gap: 3px;
-  height: 200px;
+  height: auto;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
   overflow: hidden;
