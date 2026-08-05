@@ -24,7 +24,6 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     }
     return rows
   })
-  const FIELD_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
   function cellId(ri, ci) { return `dashboard-cell-${ri + 1}-${ci + 1}` }
 
   function getTabData() {
@@ -41,6 +40,26 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
   function equalSizes(n) {
     const base = Math.floor(100 / n)
     return Array.from({ length: n }, (_, i) => (i < n - 1 ? base : 100 - base * (n - 1)))
+  }
+
+  function clampSize(size) {
+    return String(Math.max(5, Math.min(95, Number(size) || 5)))
+  }
+
+  // Writes row/cell size percentages straight into the real stored layout,
+  // same as the other update* functions — this was the last piece still
+  // living only in the local `gridRows` draft, requiring an explicit "Save
+  // Tab" step to avoid being silently lost.
+  function updateRowSize(ri, size) {
+    const row = getGridContainer()?.layouts?.[0]?.rows?.[ri]
+    if (!row) return
+    row.size = clampSize(size)
+  }
+
+  function updateCellSize(ri, ci, size) {
+    const cell = getGridContainer()?.layouts?.[0]?.rows?.[ri]?.cells?.[ci]
+    if (!cell) return
+    cell.size = clampSize(size)
   }
 
   function addCell(ri) {
@@ -60,7 +79,7 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     
     // Add content
     const cellId = `dashboard-cell-${ri + 1}-${newCells + 1}`
-    gc.contents.push({ cell: cellId, component: 'DataTable' })
+    gc.contents.push({ cell: cellId, component: 'DataTable', datasourceName: '/' })
   }
 
   function removeCell(ri, ci) {
@@ -101,7 +120,7 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     
     // Add content for new cell
     const newRi = rows.length - 1
-    gc.contents.push({ cell: `dashboard-cell-${newRi + 1}-1`, component: 'BarChart' })
+    gc.contents.push({ cell: `dashboard-cell-${newRi + 1}-1`, component: 'BarChart', datasourceName: '/' })
   }
 
   function removeRow(ri) {
@@ -154,6 +173,17 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     if (content) content.datasourceName = datasourceName
   }
 
+  // Writes chart-specific field values straight into the real stored cell,
+  // same as updateCellChart/updateCellDatasource — so field edits can never be
+  // silently discarded by a `gridRows` recompute triggered by another edit.
+  function updateCellField(ri, ci, key, value) {
+    const gc = getGridContainer()
+    if (!gc?.contents) return
+    const cellId = `dashboard-cell-${ri + 1}-${ci + 1}`
+    const content = gc.contents.find(c => c.cell === cellId)
+    if (content) content[key] = value
+  }
+
   return {
     gridRows,
     addCell,
@@ -162,6 +192,9 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     removeRow,
     updateCellChart,
     updateCellDatasource,
+    updateCellField,
+    updateRowSize,
+    updateCellSize,
     cellId,
   }
 }

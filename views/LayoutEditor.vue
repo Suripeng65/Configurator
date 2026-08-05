@@ -46,15 +46,15 @@ const adaptLibrary = computed(()=>{
 const {
   cellId,
   gridRows,
-  clampRowSizes,
+  updateRowSize,
   updateCellSize,
   addCell,
   addRow,
   removeRow,
   updateCellChart,
   updateCellDatasource,
+  updateCellField,
   removeCell
-  // buildTabConfig
 } = useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
 
 const datasources = computed(()=>{ 
@@ -75,67 +75,12 @@ const accessibleDatasources = computed(()=>{
     return ds.fullPathArray.includes(key) || ds.path.match(pattern)
   })
 })
-  const FIELD_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
-
-function buildTabConfig() {
-  const key  = activeTabKey.value
-  const base = mainPanel.value?.[key] ?? {}
-  const title = base.title ?? key
-
-  const layoutRows = gridRows.value.map((row, ri) => ({
-    size: String(row.size),
-    cells: row.cells.map((cell, ci) => {
-      const obj = { id: cellId(ri, ci) }
-      if (row.cells.length > 1) obj.size = String(cell.size)
-      return obj
-    }),
-  }))
-
-  const existingGc    = base.contents?.find(c => c.component === 'GridContainer')
-  const existingCells = existingGc?.contents ?? []
-  console.log("using this gridRows to build layout...: ",gridRows)
-  const contents: any[]= []
-  gridRows.value.forEach((row:any, ri:number) => {
-    row.cells.forEach((cell:any, ci:number) => {
-      const id         = cellId(ri, ci)
-      const prev       = existingCells.find(c => c.cell === id)
-      const cellConfig = { ...(prev ?? {}), cell: id, component: cell.chart }
-      const adaptDef   = adaptLibrary.value[cell.chart]
-      
-      // Copy chart-specific properties from cell to cellConfig
-      if (adaptDef && adaptDef.fields) {
-        for (const field of adaptDef.fields) {
-          // Use the value from the cell object if it exists, otherwise use default
-          if (field.key in cell) {
-            cellConfig[field.key] = cell[field.key]
-          } else if (!(field.key in cellConfig)) {
-            cellConfig[field.key] = field.default !== undefined ? field.default : (FIELD_DEFAULTS[field.type] ?? '')
-          }
-        }
-      }
-      
-      if (!('datasourceName' in cellConfig)) cellConfig.datasourceName = '/'
-      contents.push(cellConfig)
-    })
-  })
-  let res = {
-    ...base,
-    title,
-    component: 'TabWrapper',
-    contents: [{ layouts: [{ id: 'layout-1', rows: layoutRows }], contents, component: 'GridContainer' }],
-    datasources: accessibleDatasources.value.filter((ds)=>ds.fullPathArray.includes(key)).map((ds)=>ds.matchedObject).reduce((curr, acc)=>{curr[acc.name] = acc; return curr}, {}),
-    'right-panel':     base['right-panel']     ?? { 'tab-array': [], defaultTab: null },
-    'generate-report': base['generate-report'] ?? [],
-  }
-  console.log("generating new tab layouts...", res)
-  return res
-}
-
-function saveTabLayout() {
-  const key = activeTabKey.value
-  if (!key) return
-  setValue(['viz', 'main-panel', key], buildTabConfig())
-}
+// Every grid edit (chart type, datasource, fields, row/cell size, add/remove
+// row/cell) writes straight into meta.layout.viz the moment it happens — see
+// the update*/add*/remove* functions in useGridEditor.ts. New tabs already get
+// full datasources/right-panel/generate-report defaults from createTab() in
+// useTabManager.ts. So there is nothing left to explicitly "save" for this tab:
+// the top-level Save button (EditorButtons) always persists current state.
 
 </script>
 
@@ -223,7 +168,7 @@ function saveTabLayout() {
                      <div class="d-flex align-items-center justify-content-between gap-1 mt-1">
                     <BInputGroup size="sm">
                       <BInputGroupText>w</BInputGroupText>
-                      <BFormInput type="number" v-model.number="cell.size" min="5" max="95" style="width:46px" @change="updateCellSize(ri)" />
+                      <BFormInput type="number" :model-value="cell.size" min="5" max="95" style="width:46px" @change="updateCellSize(ri, ci, Number($event.target.value))" />
                       <BInputGroupText>%</BInputGroupText>
                     </BInputGroup>
 
@@ -234,29 +179,32 @@ function saveTabLayout() {
                       <div v-for="field in adaptLibrary[cell.chart].fields" :key="field.key" class="property-field">
                         <!-- String field -->
                         <BFormGroup v-if="field.type === 'string'" :label="field.key">
-                          <BFormInput 
-                            v-model="cell[field.key]" 
+                          <BFormInput
+                            :model-value="cell[field.key]"
                             size="sm"
                             :placeholder="field.placeholder ?? ''"
+                            @change="updateCellField(ri, ci, field.key, $event.target.value)"
                           />
                         </BFormGroup>
-                        
+
                         <!-- Boolean field -->
                         <BFormGroup v-else-if="field.type === 'boolean'" :label="field.key">
                           <BFormRadioGroup
-                            v-model="cell[field.key]"
+                            :model-value="cell[field.key]"
                             :options="[{ text: 'True', value: true }, { text: 'False', value: false }]"
+                            @update:model-value="updateCellField(ri, ci, field.key, $event)"
                             >
                           </BFormRadioGroup>
                         </BFormGroup>
-                        
+
                         <!-- Number field -->
                         <BFormGroup v-else-if="field.type === 'number'" :label="field.key">
-                          <BFormInput 
-                            v-model.number="cell[field.key]" 
+                          <BFormInput
+                            :model-value="cell[field.key]"
                             type="number"
                             size="sm"
-                            :placeholder="field.placeholder ?? ''" 
+                            :placeholder="field.placeholder ?? ''"
+                            @change="updateCellField(ri, ci, field.key, Number($event.target.value))"
                           />
                         </BFormGroup>
                       </div>
@@ -269,7 +217,7 @@ function saveTabLayout() {
                 <span class="text-muted small" style="min-width:60px">Row {{ ri + 1 }}</span>
                 <BInputGroup size="sm" style="width:auto">
                   <BInputGroupText>h</BInputGroupText>
-                  <BFormInput type="number" v-model.number="row.size" min="5" max="95" style="width:60px" @change="clampRowSizes" />
+                  <BFormInput type="number" :model-value="row.size" min="5" max="95" style="width:60px" @change="updateRowSize(ri, Number($event.target.value))" />
                   <BInputGroupText>%</BInputGroupText>
                 </BInputGroup>
                 <BButton size="sm" variant="outline-secondary" :disabled="row.cells.length >= 4" @click="addCell(ri)">+ cell</BButton>
@@ -279,8 +227,6 @@ function saveTabLayout() {
 
             <BButton variant="outline-secondary" size="sm" :disabled="gridRows.length >= 6" @click="addRow">+ Add Row</BButton>
            </BCard>
-
-           <BButton variant="primary" size="sm" @click="saveTabLayout">Save Tab</BButton>
         </div>
       </BTab>
        <template #tabs-end>
