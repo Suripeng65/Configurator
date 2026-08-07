@@ -100,7 +100,12 @@ function removeDatasourceRow(item, event) {
       <BButton variant="link" size="sm" class="text-danger" @click="(e) => removeDatasourceRow(item, e)">Remove</BButton>
     </template>
   </BTable>
-  <router-view></router-view>
+  <!-- :key forces a full remount on every navigation within this section
+       (not just a param update) — DatasourceEditor and its sub-editors all
+       derive `index` from route.params.index as a one-time const, which goes
+       stale if Vue Router reuses the instance across same-route-record
+       navigations (e.g. setScope's redirect to a new index). -->
+  <router-view :key="route.fullPath"></router-view>
 </template>
 
 <style scoped>
