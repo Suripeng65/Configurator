@@ -29,21 +29,21 @@ const tabs = computed({
   }
 })
 
-// Derived from the route index (instead of a ref only set by goToEditor) so
-// it's correct on refresh / direct navigation, not just click-through.
-const activeIndex = computed(() => {
-  const raw = route.params.index
-  return raw !== undefined ? parseInt(raw as string) : null
-})
-const path = computed(() => datasources.value[activeIndex.value]?.fullPathArray ?? ["viz", "main-panel"])
+// Derived from the datasource's own path (via ?ds= query), not an array
+// index — an index is a *position*, and any insert/remove anywhere in the
+// tree rebuilds `datasources` and can shift what a fixed index points at.
+// The path string is a stable identifier for a specific datasource node.
+const activeDsPath = computed(() => (route.query.ds as string) ?? null)
+const path = computed(() =>
+  datasources.value.find(d => d.path === activeDsPath.value)?.fullPathArray ?? ["viz", "main-panel"]
+)
 
 provide("tabs", tabs)
 provide("datasources", datasources)
 provide("path", path)
 
 function goToEditor(item) {
-  const index = datasources.value.findIndex((candidate) => candidate.path === item.path)
-  router.push({name: route.name + " Edit", params: {index, id: meta.value.id}})
+  router.push({name: route.name + " Edit", params: {id: meta.value.id}, query: {ds: item.path}})
 }
 
 function goToCreate() {
@@ -101,10 +101,10 @@ function removeDatasourceRow(item, event) {
     </template>
   </BTable>
   <!-- :key forces a full remount on every navigation within this section
-       (not just a param update) — DatasourceEditor and its sub-editors all
-       derive `index` from route.params.index as a one-time const, which goes
-       stale if Vue Router reuses the instance across same-route-record
-       navigations (e.g. setScope's redirect to a new index). -->
+       (not just a param/query update) — DatasourceEditor and its sub-editors
+       derive `dsPath` as a one-time const at setup, which would go stale if
+       Vue Router reused the instance across same-route-record navigations
+       (e.g. setScope's redirect to a new ?ds=). -->
   <router-view :key="route.fullPath"></router-view>
 </template>
 

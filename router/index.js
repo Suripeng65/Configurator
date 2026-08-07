@@ -116,7 +116,7 @@ const router = createRouter({
                       editorSection: 'Datasource'
                     },
                   },{
-                    path: ':index',
+                    path: 'edit',
                     name: 'UiTemplate Edit Datasource Edit',
                     component: DatasourceEditor,
                     meta: {
@@ -180,7 +180,7 @@ const router = createRouter({
                       editorSection: 'Datasource'
                     },
                   },{
-                    path: ':index',
+                    path: 'edit',
                     name: 'UiTemplate Create Datasource Edit',
                     component: DatasourceEditor,
                     meta: {

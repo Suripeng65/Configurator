@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import {inject, computed, ref, onMounted} from "vue";
 import {useRoute, useRouter} from "vue-router";
-import {get, set, unset, cloneDeep} from "lodash";
+import {set, unset, cloneDeep} from "lodash";
 import {getScopes, existingNamesAt, insertDatasource, removeDatasource, uniqueDatasourceName} from "@src/utils/datasources.util.ts";
 import DatasourceOnSelectEdit from "@src/components/DatasourceEditor/DatasourceOnSelectEdit.vue";
 import DatasourceOnLoadEdit from "@src/components/DatasourceEditor/DatasourceOnLoadEdit.vue";
@@ -14,17 +14,21 @@ const datasources = inject("datasources", ref([]))
 const tabs = inject("tabs", ref([]))
 const route  = useRoute()
 const router = useRouter()
-const index = route.params.index ? parseInt(<string>route.params.index) : null
-const datasourceInfo = computed(() => get(datasources.value,[index,"matchedObject"], {}))
+// Identifies the datasource by its own path (via ?ds=), not an array index —
+// see the comment on activeDsPath in DatasourcesList.vue for why: an index
+// is a position, and any insert/remove anywhere in the tree rebuilds
+// `datasources` and can silently repoint a fixed index at a different item.
+const dsPath = (route.query.ds as string) ?? null
+const datasourceInfo = computed(() => datasources.value.find(d => d.path === dsPath)?.matchedObject ?? {})
 
 const scopes = computed(() => getScopes(tabs.value))
 
-// Create route (no :index param): this used to be entirely non-functional —
+// Create route (no ?ds= query): this used to be entirely non-functional —
 // nothing ever wrote the form into meta. Instead of a separate creation UI,
 // insert a real datasource (or a clone, when arriving via "Duplicate" ->
 // ?duplicate=<path>) right away and hand off to the normal edit route, so
-// the rest of this page (already wired to `index`) just works unchanged.
-if (index === null) {
+// the rest of this page (already wired to `dsPath`) just works unchanged.
+if (!dsPath) {
   onMounted(() => {
     const duplicateSourcePath = route.query.duplicate as string | undefined
     const sourceItem = duplicateSourcePath
@@ -43,11 +47,11 @@ if (index === null) {
 
     const insertedPath = insertDatasource(meta, scopeArray, newDs)
     if (!insertedPath) return
-    const newIndex = datasources.value.findIndex(d => d.path === insertedPath.join('.'))
 
     router.replace({
       name: (route.name as string).replace(/ Create$/, ' Edit'),
-      params: { index: newIndex, id: route.params.id },
+      params: { id: route.params.id },
+      query: { ds: insertedPath.join('.') },
     })
   })
 }
@@ -111,9 +115,8 @@ function setScope(newScopePath: string) {
   removeDatasource(meta, oldFullPath)
   const insertedPath = insertDatasource(meta, scopeArray, clone)
   if (!insertedPath) return
-  const newIndex = datasources.value.findIndex(d => d.path === insertedPath.join('.'))
 
-  router.replace({ name: route.name as string, params: { index: newIndex, id: route.params.id } })
+  router.replace({ name: route.name as string, params: { id: route.params.id }, query: { ds: insertedPath.join('.') } })
 }
 
 const addRule = () => {

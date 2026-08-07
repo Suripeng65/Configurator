@@ -287,8 +287,14 @@ function buildFromDef(type, name) {
 function commitAddChild() {
   const type = newChildType.value
   if (!type) return
+  // Compute the insertion index from a local fallback rather than reading
+  // props.item.contents back after lazily creating it — for a component with
+  // no contents yet (e.g. a just-added ModalSelector, which isn't a
+  // `container` type so buildFromDef never gives it one), that read isn't
+  // reliably up to date within the same synchronous call.
+  const currentContents = Array.isArray(props.item.contents) ? props.item.contents : []
+  const newIdx = currentContents.length
   if (!Array.isArray(props.item.contents)) setValue([...props.path, 'contents'], [])
-  const newIdx = props.item.contents.length
   const config = buildFromDef(type, newChildName.value.trim())
   addChild([...props.path, 'contents'], null, 'object')
   setValue([...props.path, 'contents', newIdx], config)
