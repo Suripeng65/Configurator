@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import {inject, computed, ref} from "vue";
-import {useRoute} from "vue-router";
-import {get, set, unset} from "lodash";
-import {getScopes} from "@src/utils/datasources.util.ts";
+import {inject, computed, ref, onMounted} from "vue";
+import {useRoute, useRouter} from "vue-router";
+import {get, set, unset, cloneDeep} from "lodash";
+import {getScopes, existingNamesAt, insertDatasource, uniqueDatasourceName} from "@src/utils/datasources.util.ts";
 import DatasourceOnSelectEdit from "@src/components/DatasourceEditor/DatasourceOnSelectEdit.vue";
 import DatasourceOnLoadEdit from "@src/components/DatasourceEditor/DatasourceOnLoadEdit.vue";
 import DatasourceMonitorOverridesEdit from "@src/components/DatasourceEditor/DatasourceMonitorOverridesEdit.vue";
@@ -13,16 +13,44 @@ const meta = inject<any>("meta")
 const datasources = inject("datasources", ref([]))
 const tabs = inject("tabs", ref([]))
 const route  = useRoute()
+const router = useRouter()
 const index = route.params.index ? parseInt(<string>route.params.index) : null
 const datasourceInfo = computed(() => get(datasources.value,[index,"matchedObject"], {}))
 const pagination = ref<{}>({})
 
-const backRoute = computed(() => ({
-  name: (route.name as string).replace(/ (Create|Edit)$/, ''),
-  params: { id: route.params.id },
-}))
-
 const scopes = computed(() => getScopes(tabs.value))
+
+// Create route (no :index param): this used to be entirely non-functional —
+// nothing ever wrote the form into meta. Instead of a separate creation UI,
+// insert a real datasource (or a clone, when arriving via "Duplicate" ->
+// ?duplicate=<path>) right away and hand off to the normal edit route, so
+// the rest of this page (already wired to `index`) just works unchanged.
+if (index === null) {
+  onMounted(() => {
+    const duplicateSourcePath = route.query.duplicate as string | undefined
+    const sourceItem = duplicateSourcePath
+      ? datasources.value.find(d => d.path === duplicateSourcePath)
+      : null
+
+    const scopeArray = sourceItem
+      ? sourceItem.fullPathArray.slice(0, -2) // drop name/index + 'datasources'
+      : ["viz", "main-panel"]
+
+    const existingNames = existingNamesAt(meta, scopeArray)
+    const name = uniqueDatasourceName(existingNames, sourceItem?.matchedObject.name)
+    const newDs = sourceItem
+      ? { ...cloneDeep(sourceItem.matchedObject), name }
+      : { component: "Datasource", name, "dql-metrics": [], "flat-table-target": "" }
+
+    const insertedPath = insertDatasource(meta, scopeArray, newDs)
+    const newIndex = datasources.value.findIndex(d => d.path === insertedPath.join('.'))
+
+    router.replace({
+      name: (route.name as string).replace(/ Create$/, ' Edit'),
+      params: { index: newIndex, id: route.params.id },
+    })
+  })
+}
 
 const workflow = computed({get: () => {
     if (datasourceInfo.value["flat-table-target"]) return "Flat"
@@ -68,34 +96,31 @@ const addRule = () => {
 </script>
 
 <template>
-  <div class="editor-panel">
-    <RouterLink :to="backRoute" class="back-link">&larr; Back to Datasources</RouterLink>
+  <BForm>
+    <BFormGroup id="input-group-scope" label="Scope" label-for="input-scope">
+      <BFormSelect
+          id="input-scope"
+          :model-value="scope"
+          :options="scopes"
+          text-field="matchedObject.title"
+          value-field="path"
+          disabled
+      ></BFormSelect>
+    </BFormGroup>
 
-    <BForm>
-      <BFormGroup id="input-group-scope" label="Scope" label-for="input-scope" description="Where this datasource lives in the layout. Not editable here.">
-        <BFormSelect
-            id="input-scope"
-            :model-value="scope"
-            :options="scopes"
-            text-field="matchedObject.title"
-            value-field="path"
-            disabled
-        ></BFormSelect>
-      </BFormGroup>
+    <BFormGroup id="input-group-name" label="Name" label-for="input-name">
+      <BFormInput id="input-name" v-model="datasourceInfo.name" placeholder="Enter Name" required />
+    </BFormGroup>
 
-      <BFormGroup id="input-group-name" label="Name" label-for="input-name">
-        <BFormInput id="input-name" v-model="datasourceInfo.name" placeholder="Enter Name" required />
-      </BFormGroup>
+    <BFormGroup id="input-group-description" label="Description" label-for="input-description">
+      <BFormInput id="input-description" v-model="datasourceInfo.description" placeholder="Description" required />
+    </BFormGroup>
 
-      <BFormGroup id="input-group-description" label="Description" label-for="input-description">
-        <BFormInput id="input-description" v-model="datasourceInfo.description" placeholder="Description" required />
-      </BFormGroup>
-
-      <BAccordion>
-        <BAccordionItem title="API">
-          <BFormGroup id="input-group-api" label="API" label-for="input-api">
-            <BFormInput id="input-api" v-model="datasourceInfo.api" placeholder="API" required />
-          </BFormGroup>
+    <BAccordion>
+      <BAccordionItem title="API">
+        <BFormGroup id="input-group-api" label="API" label-for="input-api">
+          <BFormInput id="input-api" v-model="datasourceInfo.api" placeholder="API" required />
+        </BFormGroup>
         <template v-if="datasourceInfo.api && datasourceInfo.api !== 'adapt-core-api'">
           <BFormGroup id="input-group-dql-support" label="DQL Support" label-for="input-dql-support">
             <BFormCheckbox id="input-dql-support" v-model="datasourceInfo['dql-support']" required />

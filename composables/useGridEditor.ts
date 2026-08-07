@@ -42,7 +42,7 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
 
   function equalSizes(n) {
     const base = Math.floor(100 / n)
-    return Array.from({ length: n }, (_, i) => (i < n - 1 ? base : 100 - base * (n - 1)))
+    return Array.from({ length: n }, (_, i) => String(i < n - 1 ? base : 100 - base * (n - 1)))
   }
 
   function clampSize(size) {
@@ -78,13 +78,13 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     } else {
       row.cells = []
     }
-    row.cells.push({ size: sizes[sizes.length - 1] })
-    
+    const newCellId = cellId(ri, newCells)
+    row.cells.push({ id: newCellId, size: sizes[sizes.length - 1] })
+
     // Add content. datasourceName is intentionally left unset — '/' isn't
     // guaranteed to exist for every tab, so the dropdown starts empty rather
     // than silently pointing at a datasource that may not be there.
-    const cellId = `dashboard-cell-${ri + 1}-${newCells + 1}`
-    gc.contents.push({ cell: cellId, component: 'DataTable' })
+    gc.contents.push({ cell: newCellId, component: 'DataTable' })
   }
 
   function removeCell(ri, ci) {
@@ -118,14 +118,15 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     rows.forEach((r, i) => { r.size = sizes[i] })
     
     // Add new row
-    rows.push({ 
-      size: sizes[sizes.length - 1], 
-      cells: [{ size: 100 }] 
+    const newRi = rows.length
+    const newCellId = cellId(newRi, 0)
+    rows.push({
+      size: sizes[sizes.length - 1],
+      cells: [{ id: newCellId, size: '100' }]
     })
-    
+
     // Add content for new cell (datasourceName left unset — see addCell)
-    const newRi = rows.length - 1
-    gc.contents.push({ cell: `dashboard-cell-${newRi + 1}-1`, component: 'BarChart' })
+    gc.contents.push({ cell: newCellId, component: 'BarChart' })
   }
 
   function removeRow(ri) {

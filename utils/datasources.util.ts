@@ -1,4 +1,4 @@
-import {get} from "lodash";
+import {get, set} from "lodash";
 
 export function getScope(meta, path = []) {
     if (path[0] === 'viz' && path[1] === 'main-panel' && path[2] === 'datasources') {
@@ -29,6 +29,38 @@ export function uniqueDatasourceName(existingNames: string[], base = "/NewDataso
     let n = 2
     while (existingNames.includes(`${base}-${n}`)) n++
     return `${base}-${n}`
+}
+
+export function existingNamesAt(meta, scopeArray: string[]) {
+    const container = get(meta.value.layout, [...scopeArray, "datasources"]) ?? {}
+    return Object.values(container).map((d: any) => d?.name).filter(Boolean)
+}
+
+// Inserts into whatever shape the target scope's `datasources` already uses
+// (array or dict) so we never turn one scope's container into a mixed shape;
+// a scope with no `datasources` yet gets a fresh dict (the current schema).
+export function insertDatasource(meta, scopeArray: string[], datasourceObj: Record<string, any>) {
+    const container = get(meta.value.layout, [...scopeArray, "datasources"])
+    if (Array.isArray(container)) {
+        container.push(datasourceObj)
+        return [...scopeArray, "datasources", container.length - 1]
+    }
+    set(meta.value.layout, [...scopeArray, "datasources", datasourceObj.name], datasourceObj)
+    return [...scopeArray, "datasources", datasourceObj.name]
+}
+
+// Removes a datasource at `fullPathArray` (as returned by findComponents),
+// splicing if the container is an array or deleting the key if it's a dict.
+export function removeDatasource(meta, fullPathArray: (string | number)[]) {
+    const key = fullPathArray[fullPathArray.length - 1]
+    const parentPath = fullPathArray.slice(0, -1)
+    const parent = get(meta.value.layout, parentPath)
+    if (!parent) return
+    if (Array.isArray(parent)) {
+        parent.splice(key as number, 1)
+    } else {
+        delete parent[key]
+    }
 }
 
 export function findComponents(layout: object, componentType: any, path: string[] = [], results: object[] = []): [{
