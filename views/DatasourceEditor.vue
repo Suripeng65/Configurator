@@ -2,7 +2,7 @@
 import {inject, computed, ref, onMounted} from "vue";
 import {useRoute, useRouter} from "vue-router";
 import {get, set, unset, cloneDeep} from "lodash";
-import {getScopes, existingNamesAt, insertDatasource, uniqueDatasourceName} from "@src/utils/datasources.util.ts";
+import {getScopes, existingNamesAt, insertDatasource, removeDatasource, uniqueDatasourceName} from "@src/utils/datasources.util.ts";
 import DatasourceOnSelectEdit from "@src/components/DatasourceEditor/DatasourceOnSelectEdit.vue";
 import DatasourceOnLoadEdit from "@src/components/DatasourceEditor/DatasourceOnLoadEdit.vue";
 import DatasourceMonitorOverridesEdit from "@src/components/DatasourceEditor/DatasourceMonitorOverridesEdit.vue";
@@ -16,7 +16,6 @@ const route  = useRoute()
 const router = useRouter()
 const index = route.params.index ? parseInt(<string>route.params.index) : null
 const datasourceInfo = computed(() => get(datasources.value,[index,"matchedObject"], {}))
-const pagination = ref<{}>({})
 
 const scopes = computed(() => getScopes(tabs.value))
 
@@ -52,9 +51,12 @@ if (index === null) {
   })
 }
 
+// Defaults to "Options" rather than leaving this undefined when neither
+// target is set yet (e.g. a brand-new datasource) — table's setter below
+// switches on this value, and an unmatched/undefined workflow silently
+// discarded whatever was typed into Table instead of ever writing it.
 const workflow = computed({get: () => {
-    if (datasourceInfo.value["flat-table-target"]) return "Flat"
-    if (datasourceInfo.value["option-target"]) return "Options"
+    return datasourceInfo.value["flat-table-target"] ? "Flat" : "Options"
   }, set: (newValue) => {
     setTable(newValue, table.value)
   }})
@@ -83,6 +85,28 @@ const scope = computed(() =>
     ?? scopes.value[0].path
 );
 
+// Moves the datasource to a different scope: remove from its current
+// location and insert at the new one (renaming on a name collision), then
+// follow it to its new index. Uses the same insert/remove helpers as
+// Create/Duplicate/Remove, so array vs dict scope shapes are handled the
+// same way everywhere.
+function setScope(newScopePath: string) {
+  if (!newScopePath || newScopePath === scope.value) return
+  const oldFullPath = [...path.value]
+  const scopeArray  = newScopePath.split('.')
+  const existingNames = existingNamesAt(meta, scopeArray)
+  const name = existingNames.includes(datasourceInfo.value.name)
+    ? uniqueDatasourceName(existingNames, datasourceInfo.value.name)
+    : datasourceInfo.value.name
+  const clone = { ...cloneDeep(datasourceInfo.value), name }
+
+  removeDatasource(meta, oldFullPath)
+  const insertedPath = insertDatasource(meta, scopeArray, clone)
+  const newIndex = datasources.value.findIndex(d => d.path === insertedPath.join('.'))
+
+  router.replace({ name: route.name as string, params: { index: newIndex, id: route.params.id } })
+}
+
 const addRule = () => {
   const empty = {
     message: "",
@@ -90,8 +114,15 @@ const addRule = () => {
     ruleName: "",
     visible: true
   }
-  if (!meta.value.rules) meta.value.rules = []
-  meta.value.rules.push(empty)
+  // The Rules table below displays datasourceInfo.rules — pushing to
+  // meta.value.rules (unrelated, top-level) meant "Add" never showed up here.
+  if (!datasourceInfo.value.rules) datasourceInfo.value.rules = []
+  datasourceInfo.value.rules.push(empty)
+}
+
+function setPagination(key, value) {
+  if (!datasourceInfo.value.pagination) datasourceInfo.value.pagination = {}
+  datasourceInfo.value.pagination[key] = value
 }
 </script>
 
@@ -104,7 +135,7 @@ const addRule = () => {
           :options="scopes"
           text-field="matchedObject.title"
           value-field="path"
-          disabled
+          @update:model-value="setScope"
       ></BFormSelect>
     </BFormGroup>
 
@@ -217,11 +248,11 @@ const addRule = () => {
         </BFormGroup>
 
         <BFormGroup id="input-group-max" label="Max" label-for="input-max">
-          <BFormInput id="input-max" type="number" v-model="pagination.max" />
+          <BFormInput id="input-max" type="number" :model-value="datasourceInfo.pagination?.max" @change="setPagination('max', Number($event.target.value))" />
         </BFormGroup>
 
         <BFormGroup id="input-group-offset" label="Offset" label-for="input-offset">
-          <BFormInput id="input-offset" type="number" v-model="pagination.offset" />
+          <BFormInput id="input-offset" type="number" :model-value="datasourceInfo.pagination?.offset" @change="setPagination('offset', Number($event.target.value))" />
         </BFormGroup>
       </BAccordionItem>
 
@@ -237,26 +268,11 @@ const addRule = () => {
         <!--  on-filter behavior not currently defined    -->
       </BAccordionItem>
     </BAccordion>
-    </BForm>
-  </div>
+  </BForm>
 </template>
 
 <style scoped>
-.editor-panel {
-  padding: 20px 28px 32px;
-  overflow: auto;
-  height: 100%;
+form {
+  overflow: scroll;
 }
-
-.back-link {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 500;
-  color: #6b7280;
-  text-decoration: none;
-  margin-bottom: 16px;
-}
-.back-link:hover { color: #4f46e5; }
-
-form { overflow: visible; }
 </style>
