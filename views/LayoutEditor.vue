@@ -134,7 +134,7 @@ const accessibleDatasources = computed(()=>{
           >×</span>
         </template>
         <div class="content-body">
-           <BCard class="grid-card">
+           <BCard v-if="gridRows" class="grid-card">
             <div class="grid-preview">
               <div
                   v-for="(row, ri) in gridRows"
@@ -160,8 +160,9 @@ const accessibleDatasources = computed(()=>{
                     </BFormSelect>
                     
                     <BFormSelect :model-value="cell.datasourceName" size="sm" @update:model-value="(val) => updateCellDatasource(ri, ci, val)">
+                      <option :value="undefined" disabled>Select a datasource…</option>
                       <option v-for="ds in accessibleDatasources" :key="ds.path" :value="ds.matchedObject.name">
-                        {{ ds.matchedObject.name }} 
+                        {{ ds.matchedObject.name }}
                       </option>
                     </BFormSelect>
 
@@ -227,6 +228,24 @@ const accessibleDatasources = computed(()=>{
 
             <BButton variant="outline-secondary" size="sm" :disabled="gridRows.length >= 6" @click="addRow">+ Add Row</BButton>
            </BCard>
+
+           <!-- Fallback: tab isn't in the standard GridContainer shape (missing or
+                out-of-date/differently-structured template) — render its raw
+                contents generically instead of hiding the data behind a fake grid. -->
+           <div v-else class="fallback-tree">
+            <p class="text-muted small fst-italic px-1 mb-3">
+              This tab doesn't use the standard grid layout (no GridContainer found) — showing its raw structure below.
+            </p>
+            <ComponentNode
+              v-if="mainPanel?.[activeTabKey]"
+              :item="mainPanel[activeTabKey]"
+              :path="['viz', 'main-panel', activeTabKey]"
+              :depth="0"
+            />
+            <p v-else class="text-muted small fst-italic px-1">
+              No content in this tab.
+            </p>
+           </div>
         </div>
       </BTab>
        <template #tabs-end>
@@ -341,6 +360,7 @@ const accessibleDatasources = computed(()=>{
 
 /* ── Tab body ── */
 .content-body { padding: 20px 28px 32px; }
+.fallback-tree { display: flex; flex-direction: column; gap: 4px; }
 
 /* ── Grid preview ── */
 .grid-preview {

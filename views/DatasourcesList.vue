@@ -1,195 +1,208 @@
 <script setup lang="ts">
 import {computed, inject, ref, provide} from 'vue'
 import {useRoute, useRouter} from "vue-router";
-import {findComponents, getScope} from "@src/utils/datasources.util.ts"
+import {get, set, cloneDeep} from "lodash";
+import {findComponents, getScope, getScopes, uniqueDatasourceName} from "@src/utils/datasources.util.ts"
 
 const route = useRoute()
 const router = useRouter()
 
 const fields = [
-  { key: 'path',        label: 'Scope', thStyle: 'min-width:100px' },
-  { key: 'name',        label: 'Datasource Name', thStyle: 'min-width:180px' },
-  { key: 'type',        label: 'Type',         thStyle: 'min-width:140px' },
-  { key: 'api',    label: 'API',     thStyle: 'min-width:100px' },
-  { key: 'table',    label: 'Table',     thStyle: 'min-width:100px' },
+  { key: 'path',    label: 'Scope',           thStyle: 'min-width:120px' },
+  { key: 'name',    label: 'Datasource Name', thStyle: 'min-width:180px' },
+  { key: 'type',    label: 'Type',            thStyle: 'min-width:120px' },
+  { key: 'api',     label: 'API',             thStyle: 'min-width:120px' },
+  { key: 'table',   label: 'Table',           thStyle: 'min-width:120px' },
+  { key: 'actions', label: '',                thStyle: 'width:90px' },
 ]
 
 const meta = inject('meta')
-const datasources = computed({
-  get: () => {
-    console.log("meta for datasource", meta.value)
-    return findComponents(meta.value.layout, "Datasource");
-  },
-  set: (newValue, oldValue) => {
-  }
-})
-const tabs = computed({
-  get: () :any[] => findComponents(meta.value.layout, "TabWrapper"),
-  set: (newValue, oldValue) => {
-  }
-})
+const datasources = computed(() => findComponents(meta.value.layout, "Datasource"))
+const tabs = computed(() => findComponents(meta.value.layout, "TabWrapper"))
+const scopes = computed(() => getScopes(tabs.value))
 
-const selectedDatasource = ref({})
-const path = ref(["viz", "main-panel"])
+// The datasource currently open in the editor route (if any). Derived
+// straight from the route param + the live `datasources` list, instead of a
+// separately-tracked ref that only gets set when navigating via a row click —
+// that was the root cause of Scope showing stale/wrong data on refresh or
+// direct navigation to an edit URL.
+const activeIndex = computed(() => {
+  const raw = route.params.index
+  return raw !== undefined ? parseInt(raw as string) : null
+})
+const path = computed(() => datasources.value[activeIndex.value]?.fullPathArray ?? ["viz", "main-panel"])
 
 provide("tabs", tabs)
 provide("datasources", datasources)
 provide("path", path)
 
-function goToEditor(item) {
-  selectedDatasource.value = item.matchedObject
-  path.value = item.fullPathArray
-  const index = datasources.value.findIndex((candidate) => candidate.path === item.path)
-
+function navigateToDatasource(pathStr: string) {
+  const index = datasources.value.findIndex((candidate) => candidate.path === pathStr)
+  if (index < 0) return
   router.push({name: route.name + " Edit", params: {index, id: meta.value.id}})
+}
+
+function goToEditor(item, _index, event) {
+  if ((event?.target as HTMLElement)?.closest?.('.row-action')) return
+  navigateToDatasource(item.path)
+}
+
+// ── Create ────────────────────────────────────────────────────────────────
+
+function existingNamesAt(scopeArray: string[]) {
+  const container = get(meta.value.layout, [...scopeArray, "datasources"]) ?? {}
+  return Object.values(container).map((d: any) => d?.name).filter(Boolean)
+}
+
+// Inserts into whatever shape the target scope's `datasources` already uses
+// (array or dict) so we never turn one scope's container into a mixed shape;
+// a scope with no `datasources` yet gets a fresh dict (the current schema).
+function insertDatasource(scopeArray: string[], datasourceObj: Record<string, any>) {
+  const container = get(meta.value.layout, [...scopeArray, "datasources"])
+  if (Array.isArray(container)) {
+    container.push(datasourceObj)
+    return [...scopeArray, "datasources", container.length - 1]
+  }
+  set(meta.value.layout, [...scopeArray, "datasources", datasourceObj.name], datasourceObj)
+  return [...scopeArray, "datasources", datasourceObj.name]
+}
+
+const showAdd  = ref(false)
+const newScope = ref('viz.main-panel')
+const newName  = ref('')
+const addError = ref('')
+
+function openAdd() {
+  newScope.value = 'viz.main-panel'
+  newName.value  = ''
+  addError.value = ''
+  showAdd.value  = true
+}
+
+function confirmAdd() {
+  const scopeArray    = newScope.value.split('.')
+  const existingNames = existingNamesAt(scopeArray)
+  const trimmed       = newName.value.trim()
+
+  if (trimmed && existingNames.includes(trimmed)) {
+    addError.value = `"${trimmed}" already exists in this scope.`
+    return
+  }
+  const name = trimmed || uniqueDatasourceName(existingNames)
+  const newDs = { component: 'Datasource', name, 'dql-metrics': [], 'flat-table-target': '' }
+  const insertedPath = insertDatasource(scopeArray, newDs)
+  showAdd.value = false
+  navigateToDatasource(insertedPath.join('.'))
+}
+
+// ── Duplicate ─────────────────────────────────────────────────────────────
+
+function duplicateDatasource(item) {
+  const scopeArray   = item.fullPathArray.slice(0, -2) // drop name/index + 'datasources'
+  const existingNames = existingNamesAt(scopeArray)
+  const name  = uniqueDatasourceName(existingNames, item.matchedObject.name)
+  const clone = { ...cloneDeep(item.matchedObject), name }
+  const insertedPath = insertDatasource(scopeArray, clone)
+  navigateToDatasource(insertedPath.join('.'))
 }
 </script>
 
 <template>
-  <BTable
-      v-if="route.name === 'UiTemplate Edit Datasource' || route.name === 'UiTemplate Create Datasource'"
-      :items="datasources"
-      :fields="fields"
-      bordered
-      hover
-      responsive
-      class="dataset-table"
-      @row-clicked="goToEditor"
-  >
-    <template #cell(path)="{ item }">
-      <span class="date-cell">{{ getScope(meta, item.fullPathArray) }}</span>
-    </template>
-    <template #cell(name)="{ item }">
-      <span class="date-cell">{{ item.matchedObject.name }}</span>
-    </template>
-    <template #cell(table)="{ item }">
-      <span class="date-cell">{{ item.matchedObject["flat-table-target"] || item.matchedObject["option-target"] }}</span>
-    </template>
-    <template #cell(type)="{ item }">
-      <span class="date-cell">{{ (item.matchedObject.dqlSupport || !item.matchedObject.api) ? "DQL" : "External API" }}</span>
-    </template>
-    <template #cell(api)="{ item }">
-      <span class="date-cell">{{ item.matchedObject.api || "adapt-core-api"}}</span>
-    </template>
-  </BTable>
-  <router-view></router-view>
+  <div class="panel">
+    <div class="panel-header">
+      <h2 class="panel-title">Datasources</h2>
+      <p class="panel-subtitle">
+        Datasources defined in this template, across every scope (Global and per-tab).
+      </p>
+      <BButton variant="primary" size="sm" @click="openAdd">+ Add Datasource</BButton>
+    </div>
+
+    <div class="panel-body" v-if="route.name === 'UiTemplate Edit Datasource' || route.name === 'UiTemplate Create Datasource'">
+      <BTable
+          :items="datasources"
+          :fields="fields"
+          hover
+          responsive
+          class="ds-table"
+          @row-clicked="goToEditor"
+      >
+        <template #cell(path)="{ item }">
+          <BBadge pill variant="light" class="scope-chip">{{ getScope(meta, item.fullPathArray) }}</BBadge>
+        </template>
+        <template #cell(name)="{ item }">
+          <span class="font-monospace">{{ item.matchedObject.name }}</span>
+        </template>
+        <template #cell(table)="{ item }">
+          <span class="text-muted small">{{ item.matchedObject["flat-table-target"] || item.matchedObject["option-target"] || '—' }}</span>
+        </template>
+        <template #cell(type)="{ item }">
+          <span class="text-muted small">{{ (item.matchedObject.dqlSupport || !item.matchedObject.api) ? "DQL" : "External API" }}</span>
+        </template>
+        <template #cell(api)="{ item }">
+          <span class="text-muted small">{{ item.matchedObject.api || "adapt-core-api" }}</span>
+        </template>
+        <template #cell(actions)="{ item }">
+          <BButton
+            variant="link"
+            size="sm"
+            class="row-action p-0"
+            title="Duplicate"
+            @click.stop="duplicateDatasource(item)"
+          >⧉ Duplicate</BButton>
+        </template>
+      </BTable>
+      <p v-if="!datasources.length" class="empty-msg">No datasources defined yet.</p>
+    </div>
+
+    <router-view></router-view>
+
+    <!-- New datasource modal -->
+    <BModal
+      v-model="showAdd"
+      title="New Datasource"
+      ok-title="Create"
+      ok-variant="primary"
+      cancel-variant="outline-secondary"
+      @ok.prevent="confirmAdd"
+    >
+      <BFormGroup label="Scope">
+        <BFormSelect v-model="newScope" :options="scopes" text-field="matchedObject.title" value-field="path" />
+      </BFormGroup>
+      <BFormGroup label="Name" class="mt-3" description="Leave blank to auto-generate.">
+        <BFormInput v-model="newName" placeholder="/NewDatasource" @keyup.enter="confirmAdd" />
+      </BFormGroup>
+      <BAlert v-model="addError" variant="danger" class="mt-3 mb-0">{{ addError }}</BAlert>
+    </BModal>
+  </div>
 </template>
 
 <style scoped>
-.editor-wrap {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  flex-direction: column;
-}
+.panel { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 
-.state-msg { padding: 40px; text-align: center; color: #6b7280; font-size: 14px; }
-
-.error-state {
-  padding: 32px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  color: #dc2626;
-  text-align: center;
-}
-.error-state pre {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
-  padding: 12px;
-  border-radius: 6px;
-  font-size: 11px;
-  color: #7f1d1d;
-  white-space: pre-wrap;
-  max-width: 480px;
-}
-
-.empty-state {
-  flex: 1;
+.panel-header {
   display: flex;
   align-items: center;
-  justify-content: center;
-  background: #f9fafb;
-}
-.empty-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 40px 48px;
-  text-align: center;
-}
-.empty-icon { font-size: 40px; }
-.empty-card h3 { font-size: 16px; font-weight: 700; color: #111; margin: 0; }
-.empty-card p  { font-size: 13px; color: #6b7280; margin: 0; }
-
-/* Split pane (same as old ConfigEditor) */
-.split-container {
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-}
-.split-container.is-dragging { cursor: col-resize; user-select: none; }
-
-.tree-pane {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: #fff;
-  min-width: 200px;
-}
-.preview-pane {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 160px;
-}
-.splitter {
-  flex: 0 0 6px;
-  background: #e5e7eb;
-  cursor: col-resize;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
-}
-.splitter:hover, .split-container.is-dragging .splitter { background: #c7d2fe; }
-.splitter-dots {
-  width: 2px;
-  height: 32px;
-  border-radius: 2px;
-  background: repeating-linear-gradient(to bottom, #9ca3af 0px, #9ca3af 3px, transparent 3px, transparent 6px);
-}
-.pane-title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #6b7280;
-  padding: 8px 12px;
-  background: #f9fafb;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  padding: 20px 24px 16px;
   border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  background: #fff;
 }
-.copy-icon-btn { background: none; color: #9ca3af; font-size: 14px; padding: 0; line-height: 1; }
-.copy-icon-btn:hover { color: #374151; }
-.tree-scroll { flex: 1; overflow: auto; padding: 8px 4px 24px 8px; }
+.panel-title    { font-size: 17px; font-weight: 700; color: #111; margin: 0; flex-basis: 100%; }
+.panel-subtitle { font-size: 12px; color: #6b7280; margin: 0; line-height: 1.5; flex: 1; }
 
-.coming-soon {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #9ca3af;
-  font-size: 14px;
-}
+.panel-body { flex: 1; overflow: auto; padding: 16px 24px; }
+
+.ds-table { cursor: pointer; }
+.ds-table :deep(th) { background: #f9fafb; font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
+.ds-table :deep(td) { vertical-align: middle; font-size: 13px; }
+.ds-table :deep(tbody tr:hover) { background: #f5f3ff; }
+
+.scope-chip { color: #4338ca !important; background: #eef2ff !important; font-weight: 500; }
+
+.row-action { color: #9ca3af !important; font-size: 12px; white-space: nowrap; }
+.row-action:hover { color: #4f46e5 !important; }
+
+.empty-msg { text-align: center; color: #9ca3af; padding: 32px; font-size: 13px; }
 </style>

@@ -88,7 +88,7 @@ export function useTabManager(mainPanel, { setValue, deleteNode, addChild }) {
         layouts: [{ id: 'layout-1', rows: [{ size: '100', cells: [{ id: 'dashboard-cell-1-1' }] }] }],
         contents: [{ cell: 'dashboard-cell-1-1', component: 'BarChart', datasourceName: '/' }],
       }],
-      datasources:       [{ name: '/', component: 'Datasource', 'dql-metrics': [], 'flat-table-target': '' }],
+      datasources:       { '/': { name: '/', component: 'Datasource', 'dql-metrics': [], 'flat-table-target': '' } },
       'right-panel':     { 'tab-array': [], defaultTab: null },
       'generate-report': [],
     })

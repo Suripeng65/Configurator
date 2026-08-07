@@ -8,6 +8,9 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
       return []
     }
     const rows = parseGridRows(mainPanel.value?.[key])
+    // No GridContainer (or unrecognized shape) — let the caller fall back to
+    // rendering the tab's raw contents instead of editing fake grid state.
+    if (!rows) return null
     // Seed each field with its previously-saved value (from chartMeta, the raw
     // stored cell) when one exists. Fields with no stored value are left
     // `undefined` so the input/radio renders empty, waiting for user input,
@@ -77,9 +80,11 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     }
     row.cells.push({ size: sizes[sizes.length - 1] })
     
-    // Add content
+    // Add content. datasourceName is intentionally left unset — '/' isn't
+    // guaranteed to exist for every tab, so the dropdown starts empty rather
+    // than silently pointing at a datasource that may not be there.
     const cellId = `dashboard-cell-${ri + 1}-${newCells + 1}`
-    gc.contents.push({ cell: cellId, component: 'DataTable', datasourceName: '/' })
+    gc.contents.push({ cell: cellId, component: 'DataTable' })
   }
 
   function removeCell(ri, ci) {
@@ -118,9 +123,9 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
       cells: [{ size: 100 }] 
     })
     
-    // Add content for new cell
+    // Add content for new cell (datasourceName left unset — see addCell)
     const newRi = rows.length - 1
-    gc.contents.push({ cell: `dashboard-cell-${newRi + 1}-1`, component: 'BarChart', datasourceName: '/' })
+    gc.contents.push({ cell: `dashboard-cell-${newRi + 1}-1`, component: 'BarChart' })
   }
 
   function removeRow(ri) {

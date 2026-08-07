@@ -2,6 +2,7 @@
 import {inject, computed, ref} from "vue";
 import {useRoute} from "vue-router";
 import {get, set, unset} from "lodash";
+import {getScopes} from "@src/utils/datasources.util.ts";
 import DatasourceOnSelectEdit from "@src/components/DatasourceEditor/DatasourceOnSelectEdit.vue";
 import DatasourceOnLoadEdit from "@src/components/DatasourceEditor/DatasourceOnLoadEdit.vue";
 import DatasourceMonitorOverridesEdit from "@src/components/DatasourceEditor/DatasourceMonitorOverridesEdit.vue";
@@ -15,6 +16,13 @@ const route  = useRoute()
 const index = route.params.index ? parseInt(<string>route.params.index) : null
 const datasourceInfo = computed(() => get(datasources.value,[index,"matchedObject"], {}))
 const pagination = ref<{}>({})
+
+const backRoute = computed(() => ({
+  name: (route.name as string).replace(/ (Create|Edit)$/, ''),
+  params: { id: route.params.id },
+}))
+
+const scopes = computed(() => getScopes(tabs.value))
 
 const workflow = computed({get: () => {
     if (datasourceInfo.value["flat-table-target"]) return "Flat"
@@ -42,17 +50,10 @@ function setTable(workflow, table) {
   }
 }
 
-const scopes = computed(() => {
-  return [{
-    matchedObject: {title: "Global"},
-    path: "viz.main-panel"
-  }, ...tabs.value]
-})
-
-const scope = computed({get: () => scopes.value.findLast(_scope => path.value.join(".").startsWith(_scope.path)).path
-  , set: (value) => {
-    console.log("setting scope", value)
-  }});
+const scope = computed(() =>
+  scopes.value.findLast(_scope => path.value.join(".").startsWith(_scope.path))?.path
+    ?? scopes.value[0].path
+);
 
 const addRule = () => {
   const empty = {
@@ -67,30 +68,34 @@ const addRule = () => {
 </script>
 
 <template>
-  <BForm>
-    <BFormGroup id="input-group-scope" label="Scope" label-for="input-scope">
-      <BFormSelect
-          id="input-scope"
-          v-model="scope"
-          :options="scopes"
-          text-field="matchedObject.title"
-          value-field="path"
-      ></BFormSelect>
-    </BFormGroup>
+  <div class="editor-panel">
+    <RouterLink :to="backRoute" class="back-link">&larr; Back to Datasources</RouterLink>
 
-    <BFormGroup id="input-group-name" label="Name" label-for="input-name">
-      <BFormInput id="input-name" v-model="datasourceInfo.name" placeholder="Enter Name" required />
-    </BFormGroup>
+    <BForm>
+      <BFormGroup id="input-group-scope" label="Scope" label-for="input-scope" description="Where this datasource lives in the layout. Not editable here.">
+        <BFormSelect
+            id="input-scope"
+            :model-value="scope"
+            :options="scopes"
+            text-field="matchedObject.title"
+            value-field="path"
+            disabled
+        ></BFormSelect>
+      </BFormGroup>
 
-    <BFormGroup id="input-group-description" label="Description" label-for="input-description">
-      <BFormInput id="input-description" v-model="datasourceInfo.description" placeholder="Description" required />
-    </BFormGroup>
+      <BFormGroup id="input-group-name" label="Name" label-for="input-name">
+        <BFormInput id="input-name" v-model="datasourceInfo.name" placeholder="Enter Name" required />
+      </BFormGroup>
 
-    <BAccordion>
-      <BAccordionItem title="API">
-        <BFormGroup id="input-group-api" label="Description" label-for="input-api">
-          <BFormInput id="input-api" v-model="datasourceInfo.api" placeholder="API" required />
-        </BFormGroup>
+      <BFormGroup id="input-group-description" label="Description" label-for="input-description">
+        <BFormInput id="input-description" v-model="datasourceInfo.description" placeholder="Description" required />
+      </BFormGroup>
+
+      <BAccordion>
+        <BAccordionItem title="API">
+          <BFormGroup id="input-group-api" label="API" label-for="input-api">
+            <BFormInput id="input-api" v-model="datasourceInfo.api" placeholder="API" required />
+          </BFormGroup>
         <template v-if="datasourceInfo.api && datasourceInfo.api !== 'adapt-core-api'">
           <BFormGroup id="input-group-dql-support" label="DQL Support" label-for="input-dql-support">
             <BFormCheckbox id="input-dql-support" v-model="datasourceInfo['dql-support']" required />
@@ -207,11 +212,26 @@ const addRule = () => {
         <!--  on-filter behavior not currently defined    -->
       </BAccordionItem>
     </BAccordion>
-  </BForm>
+    </BForm>
+  </div>
 </template>
 
 <style scoped>
-form {
-  overflow: scroll;
+.editor-panel {
+  padding: 20px 28px 32px;
+  overflow: auto;
+  height: 100%;
 }
+
+.back-link {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  text-decoration: none;
+  margin-bottom: 16px;
+}
+.back-link:hover { color: #4f46e5; }
+
+form { overflow: visible; }
 </style>

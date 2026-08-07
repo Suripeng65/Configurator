@@ -5,9 +5,30 @@ export function getScope(meta, path = []) {
         return "Global"
     }
     const idx = path.indexOf("datasources")
+    if (idx < 0) return "Unknown"
     const subPath = path.slice(0, idx)
+    const fallback = subPath[subPath.length - 1] ?? "Unknown"
     subPath.push("title")
-    return get(meta.layout, subPath, idx)
+    return get(meta.layout, subPath, fallback)
+}
+
+// Scope options shared by the Scope display (DatasourceEditor) and the
+// scope picker when creating a new datasource (DatasourcesList): Global
+// (viz.main-panel) plus every TabWrapper found in the layout.
+export function getScopes(tabs: any[]) {
+    return [{
+        matchedObject: {title: "Global"},
+        path: "viz.main-panel",
+    }, ...tabs]
+}
+
+// Generates a datasource name that doesn't collide with `existingNames`,
+// e.g. "/NewDatasource", then "/NewDatasource-2", "/NewDatasource-3", ...
+export function uniqueDatasourceName(existingNames: string[], base = "/NewDatasource") {
+    if (!existingNames.includes(base)) return base
+    let n = 2
+    while (existingNames.includes(`${base}-${n}`)) n++
+    return `${base}-${n}`
 }
 
 export function findComponents(layout: object, componentType: any, path: string[] = [], results: object[] = []): [{
