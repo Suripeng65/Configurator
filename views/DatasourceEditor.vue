@@ -36,12 +36,13 @@ if (index === null) {
       : ["viz", "main-panel"]
 
     const existingNames = existingNamesAt(meta, scopeArray)
-    const name = uniqueDatasourceName(existingNames, sourceItem?.matchedObject.name)
+    const name = uniqueDatasourceName(existingNames, sourceItem?.matchedObject?.name)
     const newDs = sourceItem
       ? { ...cloneDeep(sourceItem.matchedObject), name }
       : { component: "Datasource", name, "dql-metrics": [], "flat-table-target": "" }
 
     const insertedPath = insertDatasource(meta, scopeArray, newDs)
+    if (!insertedPath) return
     const newIndex = datasources.value.findIndex(d => d.path === insertedPath.join('.'))
 
     router.replace({
@@ -92,6 +93,13 @@ const scope = computed(() =>
 // same way everywhere.
 function setScope(newScopePath: string) {
   if (!newScopePath || newScopePath === scope.value) return
+  // Guard against acting on a not-yet-resolved datasource (e.g. right after
+  // a create/duplicate redirect) — without this, a momentarily-empty
+  // datasourceInfo silently corrupts the tree with a nameless entry.
+  if (!datasourceInfo.value?.name) {
+    console.error('setScope: no datasource currently loaded, aborting move')
+    return
+  }
   const oldFullPath = [...path.value]
   const scopeArray  = newScopePath.split('.')
   const existingNames = existingNamesAt(meta, scopeArray)
@@ -102,6 +110,7 @@ function setScope(newScopePath: string) {
 
   removeDatasource(meta, oldFullPath)
   const insertedPath = insertDatasource(meta, scopeArray, clone)
+  if (!insertedPath) return
   const newIndex = datasources.value.findIndex(d => d.path === insertedPath.join('.'))
 
   router.replace({ name: route.name as string, params: { index: newIndex, id: route.params.id } })

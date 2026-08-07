@@ -40,6 +40,13 @@ export function existingNamesAt(meta, scopeArray: string[]) {
 // (array or dict) so we never turn one scope's container into a mixed shape;
 // a scope with no `datasources` yet gets a fresh dict (the current schema).
 export function insertDatasource(meta, scopeArray: string[], datasourceObj: Record<string, any>) {
+    // Last-resort guard: a dict-shaped container keys on `name`, so a missing
+    // name would silently write the literal key "undefined" instead of
+    // failing loudly. Refuse rather than corrupt the tree.
+    if (!datasourceObj?.name) {
+        console.error('insertDatasource: refusing to insert a datasource without a name', datasourceObj)
+        return null
+    }
     const container = get(meta.value.layout, [...scopeArray, "datasources"])
     if (Array.isArray(container)) {
         container.push(datasourceObj)
