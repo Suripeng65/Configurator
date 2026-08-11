@@ -119,6 +119,29 @@ function setScope(newScopePath: string) {
   router.replace({ name: route.name as string, params: { id: route.params.id }, query: { ds: insertedPath.join('.') } })
 }
 
+// The datasource dict is keyed by name, so renaming has to move it to a new
+// key (same remove+insert pattern as setScope) — a plain v-model on .name
+// would leave the object sitting under its old key, silently out of sync
+// with the name actually shown.
+function renameDatasource(newName: string) {
+  const trimmed = newName.trim()
+  if (!trimmed || trimmed === datasourceInfo.value.name) return
+  const oldFullPath = [...path.value]
+  const scopeArray = oldFullPath.slice(0, -2) // drop own key + 'datasources'
+  const existingNames = existingNamesAt(meta, scopeArray).filter(n => n !== datasourceInfo.value.name)
+  if (existingNames.includes(trimmed)) {
+    alert(`"${trimmed}" already exists in this scope — choose a different name.`)
+    return
+  }
+  const clone = { ...cloneDeep(datasourceInfo.value), name: trimmed }
+
+  removeDatasource(meta, oldFullPath)
+  const insertedPath = insertDatasource(meta, scopeArray, clone)
+  if (!insertedPath) return
+
+  router.replace({ name: route.name as string, params: { id: route.params.id }, query: { ds: insertedPath.join('.') } })
+}
+
 const addRule = () => {
   const empty = {
     message: "",
@@ -152,7 +175,7 @@ function setPagination(key, value) {
     </BFormGroup>
 
     <BFormGroup id="input-group-name" label="Name" label-for="input-name">
-      <BFormInput id="input-name" v-model="datasourceInfo.name" placeholder="Enter Name" required />
+      <BFormInput id="input-name" :model-value="datasourceInfo.name" placeholder="Enter Name" required @change="renameDatasource($event.target.value)" />
     </BFormGroup>
 
     <BFormGroup id="input-group-description" label="Description" label-for="input-description">
