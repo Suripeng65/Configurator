@@ -4,7 +4,6 @@ const schema: AdaptComponentSchema = {
   title: 'Transform Button',
   'x-catalog': { group: 'other', nameKey: 'field' },
   type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
   properties: {
     component: { const: 'TransformButton' },
     field: { type: 'string', default: '' },

@@ -4,7 +4,6 @@ const schema: AdaptComponentSchema = {
   title: 'Donut Chart',
   'x-catalog': { group: 'chart' },
   type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
   properties: {
     component: { const: 'DonutChart' },
     'generate-report': {

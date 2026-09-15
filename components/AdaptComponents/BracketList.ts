@@ -4,7 +4,6 @@ const schema: AdaptComponentSchema = {
   title: 'Bracket List',
   'x-catalog': { group: 'filter', nameKey: 'label' },
   type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
   properties: {
     component: { const: 'BracketList' },
     label: { type: 'string', default: '' },

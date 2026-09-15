@@ -4,7 +4,6 @@ const schema: AdaptComponentSchema = {
   title: 'Nodemap',
   'x-catalog': { group: 'chart' },
   type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
   properties: {
     component: { const: 'NodeMap' },
     'generate-report': {

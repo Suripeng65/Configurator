@@ -1,6 +1,5 @@
 import Ajv, { type ValidateFunction } from 'ajv'
 import type { AdaptComponentSchema } from './types'
-import { AdaptComponentBase } from './base'
 import LayoutSection          from './LayoutSection'
 import AccordionGroup         from './AccordionGroup'
 import AggregationAccordion   from './AggregationAccordion'
@@ -83,7 +82,6 @@ const AdaptComponentContents = {
 const schemaDocument = {
   $id: 'adapt-components',
   $defs: {
-    AdaptComponent: AdaptComponentBase,
     AdaptComponentContents,
     ...ADAPT_COMPONENTS,
   },

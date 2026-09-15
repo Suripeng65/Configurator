@@ -4,7 +4,6 @@ const schema: AdaptComponentSchema = {
   title: 'Accordion Group',
   'x-catalog': { group: 'container', nameKey: 'groupName' },
   type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
   properties: {
     component: { const: 'AccordionGroup' },
     groupName: { type: 'string', default: '' },

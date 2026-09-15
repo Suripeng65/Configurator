@@ -4,7 +4,6 @@ const schema: AdaptComponentSchema = {
   title: 'Network Graph',
   'x-catalog': { group: 'chart' },
   type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
   properties: {
     component: { const: 'NetworkGraph' },
     'generate-report': {

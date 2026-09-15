@@ -4,7 +4,6 @@ const schema: AdaptComponentSchema = {
   title: 'Stratification Dropdown',
   'x-catalog': { group: 'filter', nameKey: 'displayName' },
   type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
   properties: {
     component: { const: 'StratificationDropdown' },
     displayName: { type: 'string', default: '' },

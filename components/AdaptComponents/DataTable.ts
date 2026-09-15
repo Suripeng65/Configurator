@@ -4,7 +4,6 @@ const schema: AdaptComponentSchema = {
   title: 'Data Table',
   'x-catalog': { group: 'chart' },
   type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
   properties: {
     component: { const: 'DataTable' },
     'status-bar': { type: 'boolean', title: 'Status Bar Visibility', default: false },

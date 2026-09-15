@@ -15,7 +15,6 @@ export interface AdaptComponentSchema {
     nameKey?: string
   }
   type: 'object'
-  allOf?: Array<{ $ref: string }>
   properties: Record<string, AdaptComponentFieldSchema>
   required?: string[]
 }

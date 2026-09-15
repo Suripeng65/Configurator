@@ -4,7 +4,6 @@ const schema: AdaptComponentSchema = {
   title: 'Range Selector',
   'x-catalog': { group: 'filter', nameKey: 'label' },
   type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
   properties: {
     component: { const: 'ContinuousRangeInput' },
     label: { type: 'string', default: '' },

@@ -4,7 +4,6 @@ const schema: AdaptComponentSchema = {
   title: 'Heatmap',
   'x-catalog': { group: 'chart' },
   type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
   properties: {
     component: { const: 'HeatMap' },
     'geo-level': { type: 'string', default: '', description: 'Column name representing geography level ("state", "county", etc.)' },

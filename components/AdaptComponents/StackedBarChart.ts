@@ -4,7 +4,6 @@ const schema: AdaptComponentSchema = {
   title: 'Stacked Bar Chart',
   'x-catalog': { group: 'chart' },
   type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
   properties: {
     component: { const: 'StackedBarChart' },
     'generate-report': {

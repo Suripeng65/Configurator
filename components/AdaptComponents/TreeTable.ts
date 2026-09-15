@@ -4,7 +4,6 @@ const schema: AdaptComponentSchema = {
   title: 'Tree Table',
   'x-catalog': { group: 'chart' },
   type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
   properties: {
     component: { const: 'TreeTable' },
     'status-bar': { type: 'boolean', title: 'Status Bar Visibility', default: false },
