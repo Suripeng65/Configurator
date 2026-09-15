@@ -236,6 +236,7 @@ const accessibleDatasources = computed(()=>{
   flex: 1;
   overflow: hidden;
   height: 100%;
+  min-height: 0;
 }
 
 /* ── Left pane ── */
@@ -259,16 +260,19 @@ const accessibleDatasources = computed(()=>{
   flex-direction: column;
   overflow: hidden;
   min-width: 0;
+  min-height: 0;
 }
 
 .right-pane :deep(.layout-tab-content) {
   flex: 1;
   overflow: auto;
   background: #f8f9fb;
+  min-height: 0;
 }
 
 .right-pane :deep(.tab-pane) {
   height: 100%;
+  min-height: 0;
 }
 
 /* ── Tab nav ── */
@@ -423,6 +427,24 @@ const accessibleDatasources = computed(()=>{
 .cn-jsonforms:deep(.vertical-layout-item) { min-width: 0; }
 .cn-jsonforms:deep(.horizontal-layout) { display: flex; gap: 8px; min-width: 0; }
 .cn-jsonforms:deep(.horizontal-layout-item) { flex: 1; min-width: 0; }
+
+/* checkboxArray (e.g. generate-report: Jasper/CSV) — vue-vanilla renders each
+   option as its own unclassed <div>, which stack as block rows by default;
+   lay them out inline on one line instead. Excludes .control so the regular
+   boolean/label grid above isn't affected (its checkbox sits inside .wrapper,
+   not as a direct child of the option div). */
+.cn-jsonforms:deep(.vertical-layout-item:has(> div:not(.control) > input[type="checkbox"])) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+}
+.cn-jsonforms:deep(.vertical-layout-item:has(> div:not(.control) > input[type="checkbox"]) > div) {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
 
 /* label column + input column on one line; error/description span both
    columns on their own row below, so they don't get squeezed next to the input */
