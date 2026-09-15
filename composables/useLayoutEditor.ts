@@ -1,14 +1,14 @@
-export function getAtPath(obj: any, path: Array<string | number>) {
+function getAtPath(obj, path) {
   return path.reduce((acc, k) => (acc != null ? acc[k] : undefined), obj)
 }
 
-function defaultForType(type: string) {
+function defaultForType(type) {
   const map = { string: '', number: 0, boolean: false, null: null, object: {}, array: [] }
   return map[type] ?? ''
 }
 
 export function useLayoutEditor(meta) {
-  function setValue(path: Array<string | number>, value: any) {
+  function setValue(path, value) {
     if (!meta?.value?.layout) return
     if (path.length === 0) {
       meta.value.layout = value
@@ -18,7 +18,7 @@ export function useLayoutEditor(meta) {
     }
   }
 
-  function deleteNode(path: Array<string | number>) {
+  function deleteNode(path) {
     if (!meta?.value?.layout) return
     const parentPath = path.slice(0, -1)
     const parent = parentPath.length === 0
@@ -26,13 +26,13 @@ export function useLayoutEditor(meta) {
       : getAtPath(meta.value.layout, parentPath)
     const key = path[path.length - 1]
     if (Array.isArray(parent)) {
-      parent.splice(key as number, 1)
+      parent.splice(key, 1)
     } else {
       delete parent[key]
     }
   }
 
-  function addChild(path: Array<string | number>, key: string | number | null, type: string) {
+  function addChild(path, key, type) {
     if (!meta?.value?.layout) return
     const target = path.length === 0
       ? meta.value.layout
@@ -41,11 +41,11 @@ export function useLayoutEditor(meta) {
     if (Array.isArray(target)) {
       target.push(value)
     } else {
-      target[key as string] = value
+      target[key] = value
     }
   }
 
-  function moveItem(parentPath: Array<string | number>, fromIndex: number, toIndex: number) {
+  function moveItem(parentPath, fromIndex, toIndex) {
     if (!meta?.value?.layout) return
     const arr = parentPath.length === 0
       ? meta.value.layout

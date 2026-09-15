@@ -1,8 +1,7 @@
 <script lang="ts" setup>
-import {defineProps} from "vue"
 import {formatDate} from "@src/utils/date-util.ts";
 import {useRouter} from "vue-router";
-import {BButton, BTable} from "bootstrap-vue-next";
+import {fields} from '@src/config/base-table-schema'
 
 const router = useRouter()
 
@@ -13,23 +12,13 @@ const {rows} = defineProps({
   },
 })
 
-const fields = [
-  // { key: 'id',        label: 'ID' },
-  { key: 'name',        label: 'Name' },
-  { key: 'description',        label: 'Description' },
-  { key: 'created',    label: 'Created',     thStyle: 'width:140px' },
-  { key: 'modified',    label: 'Modified',     thStyle: 'width:140px' },
-  { key: 'modifiedBy',    label: 'Modified By',     thStyle: 'width:140px' },
-  { key: 'actions',     label: '',             thStyle: 'width:90px' },
-]
-
 function goToEditor(event) {
   const row = event?.item ?? event
   router.push({name: "UiTemplate Edit", params: {id: row.id}})
 }
 
-function duplicate(item) {
-  router.push({ name: 'UiTemplate Create', state: { sourceId: item.id } })
+function duplicate(item: any){
+  router.push({name:'UiTemplate Create', state:{ sourceId:item.id }})
 }
 </script>
 <template>
@@ -57,8 +46,9 @@ function duplicate(item) {
       <span class="mono-badge">{{ item.modifiedBy }}</span>
     </template>
     <template #cell(actions)="{ item }">
-      <BButton size="sm" variant="primary" @click.stop="goToEditor(item)">Open →</BButton>
-      <BButton size="sm" variant="outline-secondary" class="ms-1" @click.stop="duplicate(item)">Duplicate</BButton>
+      <!-- <BButton size="sm" variant="primary" @click.stop="goToEditor(item)">Open →</BButton> -->
+      <BButton size="sm" variant="outline-secondary" @click.stop="duplicate(item)">Duplicate</BButton>
+
     </template>
   </BTable>
 </template>

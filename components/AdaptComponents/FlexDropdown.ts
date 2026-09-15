@@ -1,17 +1,10 @@
-import type { AdaptComponentSchema } from './types'
-
-const schema: AdaptComponentSchema = {
-  title: 'Flex Dropdown',
-  'x-catalog': { group: 'filter', nameKey: 'label' },
-  type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
-  properties: {
-    component: { const: 'FlexDropdown' },
-    label: { type: 'string', default: '' },
-    dim: { type: 'string', default: '' },
-    options: { type: 'array', items: { type: 'string' }, default: [] },
-  },
-  required: ['component'],
+export default {
+  label: 'Flex Dropdown',
+  group: 'filter',
+  nameKey: 'label',
+  fields: [
+    { key: 'label',   type: 'string', default: '' },
+    { key: 'dim',     type: 'string', default: '' },
+    { key: 'options', type: 'array',  default: [] },
+  ],
 }
-
-export default schema

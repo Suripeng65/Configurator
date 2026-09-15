@@ -1,19 +1,25 @@
-import type { AdaptComponentSchema } from './types'
-
-const schema: AdaptComponentSchema = {
-  title: 'Stacked Bar',
-  'x-catalog': { group: 'chart' },
-  type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
-  properties: {
-    component: { const: 'StackedBarChart' },
-    datasourceName: { type: 'string', default: '/', 'x-widget': 'datasource' },
-    'x-axis': { type: 'string' },
-    'generate-report': { type: 'boolean' },
-    'boost-point-threshold': { type: 'number' },
-    'boost-series-threshold': { type: 'number' },
-  },
-  required: ['component'],
+export default{
+    id:'StackedBarChart',
+    label: 'Stacked Bar Chart',
+    fields:[
+        {
+        key: 'generate-report', 
+        type:'checkboxArray', 
+        value: [],
+        options: [
+          { text: 'Jasper', value: 'jasper' },
+          { text: 'CSV', value: 'csv' },
+        ]
+      },
+      {key: 'boost-point-threshold', type:'number', value:'', placeholder: 'Threshold for boost mode'},
+      {key: 'boost-series-threshold', type:'number', value:'', placeholder: 'Threshold for boost mode'},
+      {
+        key: 'x-axis',
+         type: 'arrayOfObjects',
+        value: [],
+        placeholder: 'Enter dimension name (e.g., report_dt)',
+        objectSchema: [{ key: 'dim', type: 'string', placeholder: 'e.g., report_dt' }]
+      },
+        {key: 'render-type', type:'dropdown', value:'', options: ['normal', 'overlap', 'percent', 'stream']},
+    ]
 }
-
-export default schema

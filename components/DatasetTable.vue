@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-import {defineProps} from "vue"
 import {formatDate} from "@src/utils/date-util.ts";
 import {useRouter} from "vue-router";
 
@@ -17,6 +16,7 @@ const fields = [
   { key: 'name',        label: 'Dataset Name', thStyle: 'min-width:180px' },
   { key: 'dsid',        label: 'DSID',         thStyle: 'min-width:140px' },
   { key: 'created',    label: 'Created Date',     thStyle: 'min-width:100px' },
+  { key: 'createdBy',    label: 'Created By',     thStyle: 'min-width:100px' },
   { key: 'modified',    label: 'Modified Date',     thStyle: 'min-width:100px' },
   { key: 'modifiedBy',  label: 'Modified By',     thStyle: 'min-width:100px' },
 ]

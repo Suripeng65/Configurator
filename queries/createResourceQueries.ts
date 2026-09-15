@@ -55,11 +55,7 @@ export function createResourceQueries<T extends { id: string }>(
     function useCreate() {
         const cache = useQueryCache()
         return useMutation({
-            mutation: (payload: Partial<T>) => {
-                const body = { ...payload }
-                if ((body as any).id == null) delete (body as any).id
-                return api.post<T>(`/${resource}`, body).then((r) => r.data)
-            },
+            mutation: (payload: Partial<T>) => api.post<T>(`/${resource}`, payload).then((r) => r.data),
             onSettled() {
                 cache.invalidateQueries({ key: KEYS.list() })
             },
@@ -80,22 +76,32 @@ export function createResourceQueries<T extends { id: string }>(
     function useRemove() {
         const cache = useQueryCache()
         return useMutation({
-            mutation: (id: string) => {
-                console.log("Removing " + resource + `(${id})`)
-                return api.delete(`/${resource}/${id}`)
+            mutation: (payload: T) => {
+                console.log("Removing " + resource + `(${payload.id})` , payload)
+                return api.post<T>(`/${resource}/${payload.id}/archived`, { archived: true }).then((r) => r.data)
             },
-            onSettled(_data, _error, id) {
+            onSettled(_data, _error, payload) {
                 cache.invalidateQueries({ key: KEYS.list() })
-                cache.invalidateQueries({ key: KEYS.byId(id) })
+                cache.invalidateQueries({ key: KEYS.byId(payload.id) })
             },
         })
     }
 
-    // Plain GET, not a Pinia Colada query: callers need this as a one-off
-    // check before a create, not as cached/reactive state.
-    function checkExists(name: string): Promise<boolean> {
-        return api.get<{ exists: boolean }>(`/${resource}/exists`, { params: { name } }).then((r) => r.data.exists)
+    function useUpdateReleases() {
+        const cache = useQueryCache()
+        return useMutation({
+            mutation: (payload: { id: string | number; releases: any[] }) => {
+                return api.post(`/${resource}/${payload.id}/releases`, payload.releases).then((r) => r.data)
+            },
+            onSettled(_data, _error, payload) {
+                cache.invalidateQueries({ key: KEYS.list() })
+                cache.invalidateQueries({ key: KEYS.byId(String(payload.id)) })
+            },
+        })
     }
 
-    return { KEYS, useList, useById, useCreate, useUpdate, useRemove, checkExists }
+    function checkExists(name:string): Promise<boolean>{
+        return api.get<{exists:boolean}>(`${resource}/exists`, {params:{name}}).then((r)=>r.data.exists)
+    }
+    return { KEYS, useList, useById, useCreate, useUpdate, useRemove, useUpdateReleases, checkExists }
 }

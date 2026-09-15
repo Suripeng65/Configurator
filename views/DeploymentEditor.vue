@@ -2,22 +2,25 @@
 import { ref, computed, watch, Ref} from 'vue'
 import { useRoute,useRouter } from 'vue-router'
 import {deploymentsQueries} from "@src/queries";
-import {cloneDeep} from "lodash";
+import {cloneDeep, set} from "lodash";
 import Banner from '@src/components/Banner.vue'
 import useEditorWorkflow from "@src/composables/EditorWorkflow";
 import {uiTemplatesQueries, variablesQueries, datasetsQueries} from "@src/queries"
-import {BButton} from "bootstrap-vue-next";
+import EditorButtons from "@src/components/EditorButtons.vue";
+import { validateDeployments } from '@src/validation'
 
 const route = useRoute()
 const router = useRouter()
 
 const meta: Ref<Record<string, any>>       = ref({
   id: null,
-  description: history.state?.description ?? '',
   siteCode: null,
   containerId:null,
   datasetMetadata:{},
-  templateConfig:{columnTemplate:{name:""}, uiTemplate:{name:""}}
+  templateConfig:{
+    columnTemplate:{name:"", id:null}, 
+    uiTemplate:{name:"", id:null}
+  }
 })
 
 const {
@@ -29,20 +32,65 @@ const {
   update,
   updating,
   remove,
-} = useEditorWorkflow(deploymentsQueries, meta)
+  violations
+} = useEditorWorkflow(deploymentsQueries, meta, validateDeployments)
 
-const { data: allDeployments, isLoading: loadingDeployments } = deploymentsQueries.useList()
 const { data: datasets, isLoading: loadingDatasets } = datasetsQueries.useList()
 const { data: variables, isLoading: loadingVariables } = variablesQueries.useList()
 const { data: uiTemplates, isLoading: loadingUiTemplates } = uiTemplatesQueries.useList()
 
 function resetModel() {
+  violations.value = []
   if (deployment.value) {
     meta.value = cloneDeep(deployment.value)
-    if (!meta.value.columns) meta.value.columns = []
+    if (!meta.value.templateConfig) {
+      meta.value.templateConfig = {
+        columnTemplate:{name:"", id:null}, 
+        uiTemplate:{name:"", id:null}
+      }
+    }
+    if (!meta.value.templateConfig.columnTemplate) {
+      meta.value.templateConfig.columnTemplate = {name:"", id:null}
+    }
+    if (!meta.value.templateConfig.uiTemplate) {
+      meta.value.templateConfig.uiTemplate = {name:"", id:null}
+    }
+  }
+}
+function setDataset(selection){
+  const dataset = datasets.value.find(d => d.name === selection)
+  if(dataset){
+    meta.value.datasetMetadata = cloneDeep(dataset)
   }
 }
 
+function add(data) {
+  if (!data.templateConfig.id) {
+    const {
+      datasetMetadata: {id},
+      siteCode,
+      containerId
+    } = data
+    if(siteCode && containerId && id){
+      const {name: dataset} = datasets.value.find(_dataset => _dataset.id === id )
+      data.templateConfig.name = `${dataset} (${siteCode}, ${containerId})`
+     }
+    create(data)
+  }
+}
+
+function setValue(path, value){
+  if(typeof value === 'number') set(meta.value, path, Number(value))
+  else set(meta.value, path, value)
+}
+function updateDeployment(data) {
+  if(data.templateConfig.id) update(data)
+  else add(data)
+}
+function cancel(){
+  resetModel()
+  router.push({path:'/deployment'})
+}
 </script>
 <template>
   <div class="editor-wrap">
@@ -50,12 +98,20 @@ function resetModel() {
       <template #buttons>
         <BButtonGroup>
           <BButton variant="warning" size="sm" @click="resetModel">Reset</BButton>
-          <BButton variant="primary" size="sm" @click="update(meta)">Save</BButton>
-          <BButton variant="danger" size="sm" @click="remove(id)">Delete</BButton>
+          <BButton variant="primary" size="sm" @click="updateDeployment(meta)" v-if="meta.id">Save</BButton>
+          <BButton variant="primary" size="sm" @click="add(meta)" v-else>Create</BButton>
+          <BButton size="sm" @click="cancel()" >Cancel</BButton>
         </BButtonGroup>
       </template>
     </Banner>
-
+     <BAlert :model-value="violations.length > 0" variant="danger">
+      <strong> Fix the following before saving:</strong>
+      <ul class="mb-0">
+        <li v-for="v in violations" :key="v.rule">
+          {{v.message}}
+        </li>
+      </ul>
+    </BAlert>
     <div v-if="loading" class="state-msg">Loading…</div>
     <div v-else-if="error" class="state-msg error-msg">{{ error }}</div>
 
@@ -69,38 +125,39 @@ function resetModel() {
        <BFormGroup id="input-group-container-id" label="ContainerId" label-for="input-container-id">
         <BFormInput id="input-container-id" v-model="meta.containerId" placeholder="Enter name" required />
       </BFormGroup>
-
+      <BFormGroup id="input-group-top-panel-order" label="Top Panel Order" label-for="input-container-id">
+        <BFormInput id="input-top-panel-order" v-model="meta.topPanelOrder" placeholder="Enter order" />
+      </BFormGroup>
       <BFormGroup id="dropdown-group-dataset" label="Dataset" label-for="input-dataset">
         <BFormSelect
             id="input-dataset"
-            v-model="meta.datasetMetadata.name"
+            v-model="meta.datasetMetadata.id"
             :options="datasets"
             text-field="name"
-            value-field="name"
+            value-field="id"
         ></BFormSelect>
       </BFormGroup>
 
       <BFormGroup id="dropdown-group-ui-template" label="UI Template" label-for="input-ui-template">
         <BFormSelect
             id="input-ui-template"
-            v-model="meta.templateConfig.uiTemplate.name"
+            :model-value="meta.templateConfig?.uiTemplate?.id ?? ''"
             :options="uiTemplates"
             text-field="name"
-            value-field="name"
+            value-field="id"
+            @change="setValue(['templateConfig', 'uiTemplate', 'id'], Number($event.target.value))"
         ></BFormSelect>
       </BFormGroup>
 
       <BFormGroup id="dropdown-group-variables" label="Variables" label-for="input-variables">
         <BFormSelect
             id="input-variables"
-            v-model="meta.templateConfig.columnTemplate.name"
+            :model-value="meta.templateConfig?.columnTemplate?.id ?? ''"
             :options="variables"
             text-field="name"
-            value-field="name"
+            value-field="id"
+            @change="setValue(['templateConfig', 'columnTemplate', 'id'], Number($event.target.value))"
         ></BFormSelect>
-      </BFormGroup>
-      <BFormGroup id="input-group-3" label="Description" label-for="input-3">
-        <BFormTextarea id="input-3" v-model="meta.description" placeholder="Enter description" />
       </BFormGroup>
 
       <HistoryFormGroup :meta="meta"/>

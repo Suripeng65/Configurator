@@ -1,9 +1,7 @@
 <script lang="ts" setup>
-import {defineProps} from "vue"
 import {formatDate} from "@src/utils/date-util.ts";
 import {useRouter} from "vue-router";
-import {BTable} from "bootstrap-vue-next";
-
+import {fields} from '@src/config/base-table-schema'
 const router = useRouter()
 
 const {rows} = defineProps({
@@ -13,19 +11,15 @@ const {rows} = defineProps({
   },
 })
 
-const fields = [
-  // { key: 'id', label: 'ID' },
-  { key: 'name', label: 'Column Template Name' },
-  { key: 'description', label: 'Description' },
-  { key: 'created', label: 'Created' },
-  { key: 'modified', label: 'Modified' },
-  { key: 'modifiedBy', label: 'Modified By' },
-]
-
 function goToEditor(event) {
   const row = event?.item ?? event
   router.push({name: "Variable Edit", params: {id: row.id}})
 }
+
+function duplicate(item: any){
+  router.push({name:'Variable Create', state:{ sourceId: item.id }})
+}
+
 </script>
 <template>
   <BTable
@@ -45,11 +39,17 @@ function goToEditor(event) {
     <template #cell(created)="{ item }">
       <span class="date-cell">{{ formatDate(item.created) }}</span>
     </template>
+    <template #cell(createdBy)="{ item }">
+      <span class="date-cell">{{ item.createdBy }}</span>
+    </template>
     <template #cell(modified)="{ item }">
       <span class="date-cell">{{ formatDate(item.modified) }}</span>
     </template>
     <template #cell(modifiedBy)="{ item }">
       <span class="mono-badge">{{ item.modifiedBy }}</span>
+    </template>
+    <template #cell(actions)="{ item }">
+      <BButton size="sm" variant="outline-secondary" @click.stop="duplicate(item)">Duplicate</BButton>
     </template>
   </BTable>
 </template>

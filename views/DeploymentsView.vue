@@ -75,39 +75,11 @@ async function deleteRow(item) {
 }
 
 function goToEditor(event) {
-  console.log('goToEditor', event.id)
   router.push({ name: 'Deployment Details', params: { id: event.id } })
-}
-
-function openCreate() {
-  createForm.value = { name: '', dsId: '', containerId: '', siteCode: '', description: '' }
-  createError.value = ''
-  showCreate.value = true
 }
 
 function resetCreate() {
   createError.value = ''
-}
-
-async function submitCreate() {
-  createError.value = ''
-  const f = createForm.value
-  if (!f.name.trim() || !f.dsId.trim()) {
-    createError.value = 'Name and DSID are required.'
-    return
-  }
-  try {
-    await create({
-      dsId: f.dsId.trim(),
-      name: f.name.trim(),
-      containerId: f.containerId.trim() || null,
-      siteCode: f.siteCode.trim() || null,
-      description: f.description.trim() || null,
-    })
-    showCreate.value = false
-  } catch (e) {
-    createError.value = e.response?.data?.detail ?? 'Create failed.'
-  }
 }
 
 onMounted(() => {
@@ -143,9 +115,9 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-width: 0;
   overflow: hidden;
   background: #f9fafb;
+  min-width:0px;
 }
 
 .page-header {
@@ -163,17 +135,8 @@ onMounted(() => {
   flex: 1;
   overflow: auto;
   padding: 16px;
-  min-width: 0;
 }
-
-/* Force a visible, always-drawn scrollbar instead of the OS's auto-hiding
-   overlay style, so it's obvious the table can scroll horizontally. */
-.table-wrap :deep(.table-responsive) { scrollbar-width: auto; }
-.table-wrap :deep(.table-responsive)::-webkit-scrollbar { height: 10px; }
-.table-wrap :deep(.table-responsive)::-webkit-scrollbar-track { background: #f3f4f6; }
-.table-wrap :deep(.table-responsive)::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 5px; }
-.table-wrap :deep(.table-responsive)::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-
+.dataset-table {min-width:1200px;}
 .dataset-table :deep(td) { vertical-align: middle; padding: 6px 10px; }
 .dataset-table :deep(th) { background: #f3f4f6; font-size: 12px; font-weight: 600; color: #374151; }
 

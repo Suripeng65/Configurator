@@ -1,22 +1,25 @@
 <script setup lang="ts">
-import {ref, computed, Ref} from 'vue'
+import {ref, Ref, watch, computed} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { BTable, BButton, BModal, BFormInput, BAlert } from 'bootstrap-vue-next'
 import Banner from '@src/components/Banner.vue'
 import HistoryFormGroup from "@src/components/HistoryFormGroup.vue";
-import ExportJsonModal from '@src/components/ExportJsonModal.vue'
-import ConfirmOverwriteModal from '@src/components/ConfirmOverwriteModal.vue'
 import useEditorWorkflow from "@src/composables/EditorWorkflow.ts";
-import {validateVariables} from "@src/validation/index";
 import {variablesQueries} from "@src/queries";
 import {cloneDeep} from "lodash";
+import EditorButtons from "@src/components/EditorButtons.vue";
+ import { validateVariables } from '@src/validation';
+import ExportJsonModal from '@src/components/ImportExport/ExportJsonModal.vue';
+import ConfirmOverwriteModal from '@src/components/ConfirmOverwrite/ConfirmOverwriteModal.vue';
+import {ColumnRole, ColumnType} from '@src/types/variable.interface'
+import ArchiveModal from "@src/components/ArchiveModal.vue";
+import { useResourceUsageCheck } from "@src/composables/ResourceUsageCheck";
 
 const showCreate = ref(false)
-const showExport = ref(false)
 
 const router = useRouter()
 const route  = useRoute()
 const id = route.params.id ? parseInt(<string>route.params.id) : null
+const sourceId = !id && history.state?.sourceId ? history.state.sourceId : null
 
 const meta: Ref<Record<string, any>>       = ref({
   id: id,
@@ -24,8 +27,6 @@ const meta: Ref<Record<string, any>>       = ref({
   description: history.state?.description ?? '',
   columns: []
 })
-
-const exportJson = computed(() => JSON.stringify(meta.value, null, 2))
 
 const {
   data,
@@ -40,7 +41,7 @@ const {
   showOverwriteConfirm,
   pendingOverwriteName,
   confirmOverwrite,
-  cancelOverwrite,
+  cancelOverwrite
 } = useEditorWorkflow(variablesQueries, meta, validateVariables)
 
 function resetModel() {
@@ -56,16 +57,26 @@ function markDirty(i) {
   // Track dirty rows if needed
 }
 
-const newCol = ref({ columnName: '', columnDisplayName: '', role: '', type: '', format: '', visibility: true })
+const newCol = ref({ columnName: '', columnDisplayName: '', format: '', visibility: true })
 
 const fields = [
-  { key: 'columnName',        label: 'Column Name',         thStyle: 'min-width:150px' },
+  { key: 'columnName',        label: 'Column Name',         thStyle: 'min-width:90px' },
   { key: 'displayName', label: 'Display Name',        thStyle: 'min-width:150px' },
-  { key: 'role',            label: 'Role',              thStyle: 'min-width:100px' },
-  { key: 'type',            label: 'Type',              thStyle: 'min-width:100px' },
-  { key: 'format',            label: 'Format',              thStyle: 'min-width:100px' },
-  { key: 'visible',        label: 'Visible',             thStyle: 'width:80px' },
-  { key: 'actions',           label: '',                    thStyle: 'width:120px' },
+  { key: 'description', label: 'Column Description',        thStyle: 'min-width:150px' },
+  { key: 'role',            label: 'Role',              thStyle: 'min-width:120px' },
+  { key: 'type',            label: 'Type',              thStyle: 'min-width:120px' },
+  { key: 'format',            label: 'Format',              thStyle: 'min-width:70px' },
+  { key: 'groupName', label: 'Group Name',        thStyle: 'min-width:100px' },
+  { key: 'groupDescription', label: 'Group Description',        thStyle: 'min-width:150px' },
+  { key: 'extendedType', label: 'Extended Type',        thStyle: 'min-width:150px' },
+  { key: 'fkColumnName', label: 'Foreign Key Column Name',        thStyle: 'min-width:150px' },
+  { key: 'unstratifiedValue', label: 'Unstratified Value',        thStyle: 'min-width:150px' },
+  { key: 'collapseGroup', label: 'Collapse Group',        thStyle: 'min-width:150px' },
+  { key: 'hideWhenCollapsed', label: 'Hide When Collapsed',        thStyle: 'min-width:150px' },
+  { key: 'defaultFilterOperator', label: 'Default Filter Operator',        thStyle: 'min-width:150px' },
+  { key: 'expression', label: 'Expression',        thStyle: 'min-width:150px' },
+  { key: 'visible',        label: 'Visible',             thStyle: 'width:30px' },
+  { key: 'actions',           label: 'Action',                    thStyle: 'width:50px' },
 ]
 
 function deleteCol(item) {
@@ -78,45 +89,94 @@ async function submitCreate() {
   if (!c.columnName.trim()) return
   meta.value.columns.push(cloneDeep(c))
   showCreate.value = false
-  newCol.value = { columnName: '', columnDisplayName: '', role: '', type: '', format: '', visibility: true }
+  newCol.value = { columnName: '', columnDisplayName: '', format: '', visibility: true }
 }
+if(sourceId){
+  const {data:sourceData} = variablesQueries.useById(sourceId)
+  watch(sourceData, (data)=>{
+    if (data) {
+      meta.id = null
+      meta.value.name = `Copy of ${data.name}`
+      meta.value.description =  data.description ?? ''
+      meta.value.columns = data.columns ? cloneDeep(data.columns) : []
+    }
+  }, {immediate:true})
+}
+function cancel(){
+  if(meta.value && meta.value.name && meta?.value?.columns?.length !== 0 && meta.value.description) resetModel()
+  router.push({path:"/variable"})
+}
+const exportJson = computed(()=>JSON.stringify(meta.value, null, 2))
+const showExport = ref(false)
+
+const showArchiveModal = ref(false)
+const archiveModalMsg = 'Are you sure you want to archive the variables?'
+const archiveModalTitle = 'Archive Variables'
+
+const { isResourceInUse } = useResourceUsageCheck()
+const isVariableListInUse = computed(() => {
+  if (!meta.value.id) return false
+  return isResourceInUse({ resourceType: 'variables', resourceId: meta.value.id })
+})
+
+function archiveBtnClick() {
+  showArchiveModal.value = true
+}
+
+function archiveConfirm() {
+  remove(meta.value)
+  showArchiveModal.value = false
+  router.push({ path: '/variable'})
+}
+
+function archiveCancel() {
+  showArchiveModal.value = false
+}
+
 </script>
 <template>
   <div class="view-wrap">
     <Banner>
       <template #buttons>
         <BButtonGroup>
-          <BButton variant="outline-primary" size="sm" @click="showExport = true">Export</BButton>
-          <BButton variant="warning" size="sm" @click="resetModel">Reset</BButton>
-          <BButton v-if="!id" variant="primary" size="sm" @click="create(meta)">Save</BButton>
-          <BButton v-if="id" variant="primary" size="sm" @click="update(meta)">Save</BButton>
-          <BButton v-if="id" variant="danger" size="sm" @click="remove(id)">Delete</BButton>
+          <BButton variant="light" size="sm" @click="showExport = true" v-if="meta.id">Export</BButton>
+          <BButton variant="warning" size="sm" @click="resetModel" v-if="meta.id">Reset</BButton>
+          <BButton variant="primary" size="sm" @click="update(meta)" v-if="meta.id">Save</BButton>
+          <BButton variant="danger" size="sm"  @click="archiveBtnClick" v-if="meta.id && isVariableListInUse === false">Archive</BButton>
+          <BButton variant="primary" size="sm" @click="create(meta)" v-else>Create</BButton>
+          <BButton size="sm" @click="cancel()" >Cancel</BButton>
         </BButtonGroup>
       </template>
     </Banner>
-
     <ExportJsonModal
-      v-model="showExport"
-      title="Export Variables"
-      body-text="Copy the Variables JSON below."
-      :json="exportJson"
+    v-model="showExport"
+    title="Export Variables"
+    body-text="Copy the Variables JSON below."
+    :json="exportJson"
     />
-
-    <ConfirmOverwriteModal
+    <ConfirmOverwriteModal 
       v-model="showOverwriteConfirm"
       :name="pendingOverwriteName"
-      entity-label="variables list"
-      @confirm="confirmOverwrite"
+      entity-label="Variables Template"
       @cancel="cancelOverwrite"
-    />
-
+      @confirm="confirmOverwrite"
+      />
     <BAlert v-model="error" variant="danger" dismissible>{{ error }}</BAlert>
     <BAlert :model-value="violations.length > 0" variant="danger">
-      <strong>Fix the following before saving:</strong>
+      <strong> Fix the following before saving:</strong>
       <ul class="mb-0">
-        <li v-for="v in violations" :key="v.rule">{{ v.message }}</li>
+        <li v-for="v in violations" :key="v.rule">
+          {{v.message}}
+        </li>
       </ul>
     </BAlert>
+        <ArchiveModal
+      :show-modal="showArchiveModal"
+      :modal-msg="archiveModalMsg"
+      :modal-title="archiveModalTitle"
+      @confirm="archiveConfirm"
+      @cancel="archiveCancel"
+    />
     <div v-if="loading" class="state-msg">Loading…</div>
     <div v-else-if="creating" class="state-msg error-msg">Creating…</div>
     <div v-else-if="updating" class="state-msg error-msg">Updating…</div>
@@ -149,14 +209,49 @@ async function submitCreate() {
             <template #cell(displayName)="{ item, index }">
               <input v-model="item.displayName" class="cell-input" @input="markDirty(index)" />
             </template>
-            <template #cell(role)="{ item, index }">
-              <input v-model="item.role" class="cell-input" @input="markDirty(index)" />
+            <template #cell(description)="{ item, index }">
+              <input v-model="item.description" class="cell-input" @input="markDirty(index)" />
             </template>
-            <template #cell(type)="{ item, index }">
-              <input v-model="item.type" class="cell-input" @input="markDirty(index)" />
+             <template #cell(role)="{ item, index }">
+              <!-- <input v-model="item.role" class="cell-input" @input="markDirty(index)" /> -->
+              <BFormSelect v-model="item.role" size="sm" class="cn-af-type"  @change="markDirty(index)">
+                <option v-for="(role) in ColumnRole" :value="role">{{role}}</option>  
+              </BFormSelect>
+            </template>
+             <template #cell(type)="{ item, index }">
+              <BFormSelect v-model="item.type" size="sm" class="cn-af-type"  @change="markDirty(index)">
+                <option v-for="(type) in ColumnType" :value="type">{{ type }}</option>
+              </BFormSelect>
             </template>
             <template #cell(format)="{ item, index }">
               <input v-model="item.format" class="cell-input" @input="markDirty(index)" />
+            </template>
+            <template #cell(groupName)="{ item, index }">
+              <input v-model="item.groupName" class="cell-input" @input="markDirty(index)" />
+            </template>
+            <template #cell(groupDescription)="{ item, index }">
+              <input v-model="item.groupDescription" class="cell-input" @input="markDirty(index)" />
+            </template>
+            <template #cell(extendedType)="{ item, index }">
+              <input v-model="item.extendedType" class="cell-input" @input="markDirty(index)" />
+            </template>
+            <template #cell(fkColumnName)="{ item, index }">
+              <input v-model="item.fkColumnName" class="cell-input" @input="markDirty(index)" />
+            </template>
+            <template #cell(unstratifiedValue)="{ item, index }">
+              <input v-model="item.unstratifiedValue" class="cell-input" @input="markDirty(index)" />
+            </template>
+            <template #cell(collapseGroup)="{ item, index }">
+              <input v-model="item.collapseGroup" class="cell-input" @input="markDirty(index)" />
+            </template>
+            <template #cell(hideWhenCollapsed)="{ item, index }">
+              <input v-model="item.hideWhenCollapsed" class="cell-input" @input="markDirty(index)" />
+            </template>
+            <template #cell(defaultFilterOperator)="{ item, index }">
+              <input v-model="item.defaultFilterOperator" class="cell-input" @input="markDirty(index)" />
+            </template>
+            <template #cell(expression)="{ item, index }">
+              <input v-model="item.expression" class="cell-input" @input="markDirty(index)" />
             </template>
             <template #cell(visible)="{ item, index }">
               <input type="checkbox" v-model="item.visible" @change="markDirty(index)" />
@@ -168,7 +263,7 @@ async function submitCreate() {
             </template>
           </BTable>
           <p v-if="!meta?.columns?.length" class="empty-msg">No columns defined</p>
-          <BButton variant="primary" size="sm" @click="meta.columns.push({})">Add Variable</BButton>
+          <BButton variant="primary" size="sm" @click="meta.columns.push({tableName:'table_name'})">Add Variable</BButton>
         </div>
       </BFormGroup>
     </BForm>
@@ -190,14 +285,6 @@ async function submitCreate() {
         <div class="form-row">
           <label>Display Name</label>
           <BFormInput v-model="newCol.columnDisplayName" placeholder="e.g. Patient Age" />
-        </div>
-        <div class="form-row">
-          <label>Role</label>
-          <BFormInput v-model="newCol.role" placeholder="e.g. dimension, metric" />
-        </div>
-        <div class="form-row">
-          <label>Type</label>
-          <BFormInput v-model="newCol.type" placeholder="e.g. string, number, date" />
         </div>
         <div class="form-row">
           <label>Format</label>

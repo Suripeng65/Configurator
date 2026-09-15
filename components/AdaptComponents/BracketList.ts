@@ -1,18 +1,11 @@
-import type { AdaptComponentSchema } from './types'
-
-const schema: AdaptComponentSchema = {
-  title: 'Bracket List',
-  'x-catalog': { group: 'filter', nameKey: 'displayName' },
-  type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
-  properties: {
-    component: { const: 'BracketList' },
-    displayName: { type: 'string', default: '' },
-    dim: { type: 'string', default: '' },
-    datasourceName: { type: 'string', default: '/', 'x-widget': 'datasource' },
-    values: { type: 'array', items: { type: 'array', items: { type: 'string' } }, default: [] },
-  },
-  required: ['component'],
+export default {
+  label: 'Bracket List',
+  group: 'filter',
+  nameKey: 'label',
+  container: true,
+  fields: [
+    { key: 'label', type: 'string', default: '' },
+    { key: 'dim',   type: 'string', default: '' },
+    { key: 'values',   type: 'json', default: null },
+  ],
 }
-
-export default schema

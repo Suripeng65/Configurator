@@ -4,26 +4,17 @@ import { ref, onMounted, computed } from 'vue'
 import {useRoute, useRouter} from 'vue-router'
 import axios from 'axios'
 import { BTable, BButton } from 'bootstrap-vue-next'
-import { useTemplateStore } from '@src/stores/template'
 import Banner from '@src/components/Banner.vue'
 import { formatDate } from '@src/utils/date-util'
 import { uiTemplatesQueries } from '@src/queries'
 import UiTemplatesTable from "@src/components/UiTemplatesTable.vue";
-import ImportJsonModal from '@src/components/ImportJsonModal.vue'
-import ConfirmOverwriteModal from '@src/components/ConfirmOverwriteModal.vue'
-import { validateUiTemplate } from '@src/validation/index'
-import { useCreateWithOverwriteConfirm } from '@src/composables/useCreateWithOverwriteConfirm'
+import ImportJsonModal from '@src/components/ImportExport/ImportJsonModal.vue';
+import { validateUiTemplate } from '@src/validation/index';
+import ConfirmOverwriteModal from '@src/components/ConfirmOverwrite/ConfirmOverwriteModal.vue';
+import {useCreateWithOverwriteConfirm} from '@src/composables/useCreateWithOverwriteConfirm'
 
-const store = useTemplateStore()
 const router = useRouter()
 const route = useRoute()
-
-const showImport = ref(false)
-
-function handleImport(parsed) {
-  const { id, ...payload } = parsed
-  createWithOverwriteConfirm(payload)
-}
 
 const fields = [
   // { key: 'id',        label: 'ID' },
@@ -40,21 +31,28 @@ const { mutate: create, isLoading: creating } = uiTemplatesQueries.useCreate()
 const { mutate: remove } = uiTemplatesQueries.useRemove()
 const rows = computed(() => data.value ?? [])
 
+function goToEditor(event) {
+  const item = event?.item ?? event
+  router.push({
+    name: 'UITemplate Edit',
+    params: { id: item.id }
+  })
+}
 const {
   create: createWithOverwriteConfirm,
   showOverwriteConfirm,
   pendingName: pendingOverwriteName,
   confirmOverwrite,
-  cancelOverwrite,
-} = useCreateWithOverwriteConfirm(uiTemplatesQueries.checkExists, create)
+  cancelOverwrite
+} = useCreateWithOverwriteConfirm(uiTemplatesQueries.checkExists , create)
 
-function goToEditor(event) {
-  const item = event?.item ?? event
-  store.template = item
-  router.push({
-    name: 'UiTemplate Edit',
-    params: { id: item.id }
-  })
+const showImport = ref(false)
+function handleImport(parsed){
+  const {id, ...payload} = parsed
+  if(parsed.attributes ){
+    payload.attributes = JSON.stringify(parsed.attributes)
+  }
+  createWithOverwriteConfirm(payload)
 }
 
 </script>
@@ -64,13 +62,12 @@ function goToEditor(event) {
     <Banner>
       <template #buttons>
         <BButtonGroup>
-          <RouterLink :to="{ name: 'UiTemplate Create' }" class="btn btn-primary">Create</RouterLink>
-          <BButton variant="outline-primary" size="sm" @click="showImport = true">Import</BButton>
+          <RouterLink :to="{name: 'UiTemplate Create'}" class="btn btn-primary">Create</RouterLink>
+          <BButton variant="light" size="sm" @click="showImport = true"> Import</BButton>
         </BButtonGroup>
       </template>
     </Banner>
-
-    <ImportJsonModal
+    <ImportJsonModal 
       v-model="showImport"
       title="Import UI Template"
       body-text="Paste the UI Template JSON in the field below."
@@ -78,15 +75,13 @@ function goToEditor(event) {
       :validate="validateUiTemplate"
       @import="handleImport"
     />
-
-    <ConfirmOverwriteModal
+     <ConfirmOverwriteModal 
       v-model="showOverwriteConfirm"
       :name="pendingOverwriteName"
-      entity-label="UI template"
-      @confirm="confirmOverwrite"
+      entity-label="UI Template"
       @cancel="cancelOverwrite"
+      @confirm="confirmOverwrite"
     />
-
     <div v-if="loading" class="state-msg">Loading…</div>
     <div v-else-if="error" class="state-msg error-msg">{{ error }}</div>
 
@@ -98,7 +93,7 @@ function goToEditor(event) {
 </template>
 
 <style scoped>
-.view-wrap { display: flex; flex-direction: column; height: 100%; min-width: 0; overflow: hidden; background: #f9fafb; }
+.view-wrap { display: flex; flex-direction: column; height: 100%; overflow: hidden; background: #f9fafb;   min-width:0px;}
 
 .page-header {
   display: flex;
@@ -109,16 +104,10 @@ function goToEditor(event) {
 }
 .page-title { font-size: 16px; font-weight: 700; margin: 0; color: #fff; }
 
-.table-wrap { flex: 1; overflow: auto; padding: 16px; min-width: 0; }
-
-/* Force a visible, always-drawn scrollbar instead of the OS's auto-hiding
-   overlay style, so it's obvious the table can scroll horizontally. */
-.table-wrap :deep(.table-responsive) { scrollbar-width: auto; }
-.table-wrap :deep(.table-responsive)::-webkit-scrollbar { height: 10px; }
-.table-wrap :deep(.table-responsive)::-webkit-scrollbar-track { background: #f3f4f6; }
-.table-wrap :deep(.table-responsive)::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 5px; }
-.table-wrap :deep(.table-responsive)::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-
+.table-wrap { flex: 1; overflow: auto; padding: 16px; }
+.ui-table {
+  min-width:1200px;
+}
 .ui-table :deep(tbody tr) { cursor: pointer; }
 .ui-table :deep(th) { background: #f3f4f6; font-size: 12px; font-weight: 600; color: #374151; }
 

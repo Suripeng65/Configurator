@@ -1,47 +1,38 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { storeToRefs } from 'pinia'
-import { useTemplateStore } from '@src/stores/template'
-import { useAppInfoStore } from '@src/stores/appInfo'
-import { BBreadcrumb } from "bootstrap-vue-next";
+import {useAppInfoQueries} from '@src/queries/useAppInfoQueries'
+import axios from 'axios'
 
 const route = useRoute()
-const router = useRouter()
-const appInfoStore = useAppInfoStore()
-const {currentUser} = storeToRefs(appInfoStore)
 
-const store = useTemplateStore()
-const { template, isDirty, saveStatus, mode } = storeToRefs(store)
+// const { template, isDirty, saveStatus, mode } = storeToRefs(store)
+const {queryAppConfig, queryCurrentUser} = useAppInfoQueries(axios)
+
+const {data: appInfo} = queryAppConfig()
+const {data: currentUser} = queryCurrentUser()
 
 const showImport = ref(false)
 const importText = ref('')
 const importError = ref('')
 
-const isEditorRoute = computed(() =>
-  route.path.startsWith('/uitemplate/') && !!route.params.id
-)
+// const isEditorRoute = computed(() =>
+//   route.path.startsWith('/uitemplate/') && !!route.params.id
+// )
 
 const isUITemplateRoute = computed(() =>
   route.path.startsWith('/uitemplate')
 )
 
-// True on any of the Details/Layout/Datasource/Adapt Library leaf routes,
-// for both the Edit flow (/uitemplate/:id/...) and the Create flow
-// (/uitemplate/create/...) — editorSection is only set on those four routes.
-const showUITemplateSubNav = computed(() => !!route.meta.editorSection)
-
-// Edit uses the record's id; Create has no id yet, so it uses the literal
-// "create" path segment instead.
-const uiTemplateBasePath = computed(() =>
-  route.params.id ? `/uitemplate/${route.params.id}` : '/uitemplate/create'
+const showUiTemplateSubNav = computed(() => 
+  !!route.meta.editorSection
 )
-
-function copyJson() {
-  if (!template.value) return
-  const json = JSON.stringify(template.value.layout, null, 2)
-  navigator.clipboard.writeText(json).catch(() => alert(json))
-}
+const uiTemplateBasePath = computed(()=> route.params.id ? `/uitemplate/${route.params.id}`: '/uitemplate/create')
+// function copyJson() {
+//   if (!template.value) return
+//   const json = JSON.stringify(template.value.layout, null, 2)
+//   navigator.clipboard.writeText(json).catch(() => alert(json))
+// }
 
 const breadcrumbItems = computed<[]>(() => {
   return route.matched
@@ -72,20 +63,18 @@ function closeImport() {
   importError.value = ''
 }
 
-function doImport() {
-  importError.value = ''
-  try {
-    let parsed = JSON.parse(importText.value)
-    if (parsed && typeof parsed.layout === 'object') parsed = parsed.layout
-    store.replaceLayout(parsed)
-    closeImport()
-  } catch (e) {
-    importError.value = 'Invalid JSON: ' + e.message
-  }
-}
-onMounted(()=>{
-  appInfoStore.fetchCurrentUser()
-})
+// function doImport() {
+//   importError.value = ''
+//   try {
+//     let parsed = JSON.parse(importText.value)
+//     if (parsed && typeof parsed.layout === 'object') parsed = parsed.layout
+//     store.replaceLayout(parsed)
+//     closeImport()
+//   } catch (e) {
+//     importError.value = 'Invalid JSON: ' + e.message
+//   }
+// }
+
 </script>
 <template>
   <div class="app-shell">
@@ -98,7 +87,7 @@ onMounted(()=>{
 
       <div class="top-right">
         <!-- Editor controls (only when a template is loaded on an editor route) -->
-        <template v-if="isEditorRoute && template">
+        <!-- <template v-if="isEditorRoute && template">
           <div class="mode-toggle">
             <button :class="['mode-btn', { active: mode === 'user' }]" @click="store.setMode('user')">User</button>
             <button :class="['mode-btn', { active: mode === 'dev' }]"  @click="store.setMode('dev')">Dev</button>
@@ -112,8 +101,8 @@ onMounted(()=>{
           </button>
           <button class="btn-ghost" @click="showImport = true">Import JSON</button>
           <button class="btn-ghost" @click="copyJson">Copy JSON</button>
-        </template>
-        <span class="user-name">{{ currentUser.name }}</span>
+        </template> -->
+        <span class="user-name">{{ currentUser?.name ?? '' }}</span>
       </div>
     </header>
 
@@ -126,14 +115,12 @@ onMounted(()=>{
         <RouterLink to="/uitemplate" class="nav-item" active-class="nav-active"
           :class="{ 'nav-active': isUITemplateRoute }">UI Templates</RouterLink>
 
-        <!-- Sub-nav shown when inside a specific UI template (Edit or Create) -->
-        <template v-if="showUITemplateSubNav">
-          <RouterLink :to="`${uiTemplateBasePath}/details`"     class="nav-sub" active-class="nav-sub-active">- Details</RouterLink>
+        <!-- Sub-nav shown when inside a specific UI template -->
+        
+        <template v-if="showUiTemplateSubNav">
+           <RouterLink :to="`${uiTemplateBasePath}/details`"     class="nav-sub" active-class="nav-sub-active">- Details</RouterLink>
           <RouterLink :to="`${uiTemplateBasePath}/layout`"      class="nav-sub" active-class="nav-sub-active">- Layout</RouterLink>
           <RouterLink :to="`${uiTemplateBasePath}/datasource`" class="nav-sub" active-class="nav-sub-active">- Datasources</RouterLink>
-          <RouterLink :to="`${uiTemplateBasePath}/adaptlibrary`" class="nav-sub" active-class="nav-sub-active">- Adapt Library</RouterLink>
-<!--          <RouterLink :to="`/uitemplates/${route.params.id}/apis`"        class="nav-sub" active-class="nav-sub-active">- APIs</RouterLink>-->
-<!--          <RouterLink :to="`/uitemplates/${route.params.id}/instances`"   class="nav-sub" active-class="nav-sub-active">Instances</RouterLink>-->
         </template>
         <RouterLink to="/deployment"   class="nav-item" active-class="nav-active">Deployments</RouterLink>
       </aside>
@@ -313,10 +300,10 @@ onMounted(()=>{
 /* ── Main content ── */
 .main-content {
   flex: 1;
-  min-width: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width:0;
 }
 
 /* ── Import modal ── */

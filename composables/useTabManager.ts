@@ -1,6 +1,6 @@
 import { ref, computed, watch, nextTick } from 'vue'
 
-export function useTabManager(mainPanel, { setValue, deleteNode, addChild }: any) {
+export function useTabManager(mainPanel, { setValue, deleteNode, addChild }) {
   const tabList = computed(() => {
     if (!mainPanel.value) return []
     return (mainPanel.value['tab-array'] ?? [])
@@ -11,20 +11,20 @@ export function useTabManager(mainPanel, { setValue, deleteNode, addChild }: any
   const activeTabIndex = ref(0)
   const activeTabKey   = computed(() => tabList.value[activeTabIndex.value]?.key ?? null)
 
-  watch(tabList, (list) => {
-    if (activeTabIndex.value >= list.length) {
-      activeTabIndex.value = Math.max(0, list.length - 1)
-    }
-  }, { immediate: true })
+  // watch(tabList, (list) => {
+  //   if (activeTabIndex.value >= list.length) {
+  //     activeTabIndex.value = Math.max(0, list.length - 1)
+  //   }
+  // }, { immediate: true })
 
-  // ── Inline title editing ──────────────────────────────────────────────────
+  // ── Inline title editing 
   const editingTab = ref(null)
   const editTitle  = ref('')
 
   // Decoupled from meta: resetModel() in EditorWorkflow can replace meta.value
   // with server data at any time. localTabTitles survives that — it only syncs
   // when the main-panel object reference changes (full server reload).
-  const localTabTitles = ref<Record<string, string>>({})
+  const localTabTitles = ref({})
 
   watch(() => mainPanel.value, (panel) => {
     if (!panel) return
@@ -47,27 +47,7 @@ export function useTabManager(mainPanel, { setValue, deleteNode, addChild }: any
     setValue(['viz', 'main-panel', key, 'title'], title)
   }
 
-  function cancelEdit() { editingTab.value = null }
-
-  // ── Delete tab ────────────────────────────────────────────────────────────
-  function deleteTab(key) {
-    const label = mainPanel.value?.[key]?.title ?? key
-    if (!confirm(`Delete tab "${label}"?`)) return
-    const arr  = mainPanel.value?.['tab-array'] ?? []
-    const idx  = arr.indexOf(key)
-    if (idx >= 0) deleteNode(['viz', 'main-panel', 'tab-array', idx])
-    const tabs = mainPanel.value?.['tabs'] ?? []
-    const tIdx = tabs.indexOf(key)
-    if (tIdx >= 0) deleteNode(['viz', 'main-panel', 'tabs', tIdx])
-    deleteNode(['viz', 'main-panel', key])
-    nextTick(() => {
-      if (activeTabIndex.value >= tabList.value.length) {
-        activeTabIndex.value = Math.max(0, tabList.value.length - 1)
-      }
-    })
-  }
-
-  // ── Create tab ────────────────────────────────────────────────────────────
+  // Create tab
   function createTab() {
     if (!mainPanel.value) return
 
@@ -88,7 +68,7 @@ export function useTabManager(mainPanel, { setValue, deleteNode, addChild }: any
         layouts: [{ id: 'layout-1', rows: [{ size: '100', cells: [{ id: 'dashboard-cell-1-1' }] }] }],
         contents: [{ cell: 'dashboard-cell-1-1', component: 'BarChart', datasourceName: '/' }],
       }],
-      datasources:       { '/': { name: '/', component: 'Datasource', 'dql-metrics': [], 'flat-table-target': '' } },
+      datasources:       {"/":{ name: '/', component: 'Datasource', 'dql-metrics': [], 'flat-table-target': '' }},
       'right-panel':     { 'tab-array': [], defaultTab: null },
       'generate-report': [],
     })
@@ -105,6 +85,22 @@ export function useTabManager(mainPanel, { setValue, deleteNode, addChild }: any
     })
   }
 
+  function deleteTab(key){
+    const label = mainPanel.value?.[key]?.title ?? key
+    if (!confirm(`Delete tab "${label}"?`)) return
+    const arr  = mainPanel.value?.['tab-array'] ?? []
+    const idx  = arr.indexOf(key)
+    if (idx >= 0) deleteNode(['viz', 'main-panel', 'tab-array', idx])
+    const tabs = mainPanel.value?.['tabs'] ?? []
+    const tIdx = tabs.indexOf(key)
+    if (tIdx >= 0) deleteNode(['viz', 'main-panel', 'tabs', tIdx])
+    deleteNode(['viz', 'main-panel', key])
+    nextTick(() => {
+      if (activeTabIndex.value >= tabList.value.length) {
+        activeTabIndex.value = Math.max(0, tabList.value.length - 1)
+      }
+    })
+  }
   return {
     tabList,
     activeTabIndex,
@@ -114,8 +110,7 @@ export function useTabManager(mainPanel, { setValue, deleteNode, addChild }: any
     editTitle,
     startEdit,
     commitEdit,
-    cancelEdit,
-    deleteTab,
     createTab,
+    deleteTab
   }
 }

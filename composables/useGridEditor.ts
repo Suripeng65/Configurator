@@ -8,9 +8,10 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
       return []
     }
     const rows = parseGridRows(mainPanel.value?.[key])
-    // No GridContainer (or unrecognized shape) — let the caller fall back to
-    // rendering the tab's raw contents instead of editing fake grid state.
-    if (!rows) return null
+    if(!rows){ 
+      console.log("Middle panel layout is not a GridContainer, trying the best effort")
+      return null
+    }
     // Seed each field with its previously-saved value (from chartMeta, the raw
     // stored cell) when one exists. Fields with no stored value are left
     // `undefined` so the input/radio renders empty, waiting for user input,
@@ -27,6 +28,7 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     }
     return rows
   })
+
   function cellId(ri, ci) { return `dashboard-cell-${ri + 1}-${ci + 1}` }
 
   function getTabData() {
@@ -44,24 +46,21 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     const base = Math.floor(100 / n)
     return Array.from({ length: n }, (_, i) => String(i < n - 1 ? base : 100 - base * (n - 1)))
   }
-
-  function clampSize(size) {
+  function clampSize(size){
     return String(Math.max(5, Math.min(95, Number(size) || 5)))
   }
 
-  // Writes row/cell size percentages straight into the real stored layout,
-  // same as the other update* functions — this was the last piece still
-  // living only in the local `gridRows` draft, requiring an explicit "Save
-  // Tab" step to avoid being silently lost.
-  function updateRowSize(ri, size) {
-    const row = getGridContainer()?.layouts?.[0]?.rows?.[ri]
-    if (!row) return
+  function updateRowSizes(ri, size) {
+    const gc = getGridContainer()
+    if (!gc?.layouts?.[0]?.rows) return
+    const row = gc.layouts[0].rows[ri]
     row.size = clampSize(size)
   }
 
   function updateCellSize(ri, ci, size) {
-    const cell = getGridContainer()?.layouts?.[0]?.rows?.[ri]?.cells?.[ci]
-    if (!cell) return
+    const gc = getGridContainer()
+    if (!gc?.layouts?.[0]?.rows?.[ri]?.cells?.[ci]) return
+    const cell = gc.layouts[0].rows[ri].cells[ci]
     cell.size = clampSize(size)
   }
 
@@ -79,12 +78,27 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
       row.cells = []
     }
     const newCellId = cellId(ri, newCells)
-    row.cells.push({ id: newCellId, size: sizes[sizes.length - 1] })
+    row.cells.push({id:newCellId, size: sizes[sizes.length - 1] })
+    
+    // Add content
+    // const _cellId = `dashboard-cell-${ri + 1}-${newCells + 1}`
+    gc.contents.push({ cell: newCellId, component: 'BarChart'/*, datasourceName:'/'*/ })
+  }
 
-    // Add content. datasourceName is intentionally left unset — '/' isn't
-    // guaranteed to exist for every tab, so the dropdown starts empty rather
-    // than silently pointing at a datasource that may not be there.
-    gc.contents.push({ cell: newCellId, component: 'DataTable' })
+  /** Rebase cell IDs in row `ri` starting from column `fromCi` to match new positions. */
+  function rebaseCellIdsInRow(ri, fromCi) {
+    const gc = getGridContainer()
+    if (!gc?.layouts?.[0]?.rows?.[ri]?.cells) return
+    const cells = gc.layouts[0].rows[ri].cells
+    for (let i = fromCi; i < cells.length; i++) {
+      const oldId = cells[i].id
+      const newId = cellId(ri, i)
+      if (oldId === newId) continue
+      cells[i].id = newId
+      // Update the corresponding content entry
+      const content = gc.contents.find(c => c.cell === oldId)
+      if (content) content.cell = newId
+    }
   }
 
   function removeCell(ri, ci) {
@@ -92,14 +106,17 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     if (!gc?.layouts?.[0]?.rows?.[ri]) return
     if (!confirm(`Remove cell at Row "${ri + 1}" Column "${ci + 1}"?`)) return
     const row = gc.layouts[0].rows[ri]
-    const cellId = `dashboard-cell-${ri + 1}-${ci + 1}`
+    const targetId = cellId(ri, ci)
     
     // Remove from cells
     row.cells?.splice(ci, 1)
     
     // Remove from contents
-    const idx = gc.contents.findIndex(c => c.cell === cellId)
+    const idx = gc.contents.findIndex(c => c.cell === targetId)
     if (idx !== -1) gc.contents.splice(idx, 1)
+    
+    // Rebase IDs of cells that shifted position
+    rebaseCellIdsInRow(ri, ci)
     
     // Rebalance sizes
     if (row.cells?.length) {
@@ -120,13 +137,14 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     // Add new row
     const newRi = rows.length
     const newCellId = cellId(newRi, 0)
-    rows.push({
-      size: sizes[sizes.length - 1],
-      cells: [{ id: newCellId, size: '100' }]
+    rows.push({ 
+      size: sizes[sizes.length - 1], 
+      cells: [{ size: 100, id:newCellId }] 
     })
-
-    // Add content for new cell (datasourceName left unset — see addCell)
-    gc.contents.push({ cell: newCellId, component: 'BarChart' })
+    
+    // Add content for new cell
+    // const newRi = rows.length - 1
+    gc.contents.push({ cell: newCellId, component: 'BarChart'/*, datasourceName:'/'*/ })
   }
 
   function removeRow(ri) {
@@ -138,14 +156,19 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     const row = rows[ri]
     if (row?.cells) {
       row.cells.forEach((_, ci) => {
-        const cellId = `dashboard-cell-${ri + 1}-${ci + 1}`
-        const idx = gc.contents.findIndex(c => c.cell === cellId)
+        const targetId = cellId(ri, ci)
+        const idx = gc.contents.findIndex(c => c.cell === targetId)
         if (idx !== -1) gc.contents.splice(idx, 1)
       })
     }
     
     // Remove row
     rows.splice(ri, 1)
+    
+    // Rebase cell IDs in all rows that shifted up
+    for (let r = ri; r < rows.length; r++) {
+      rebaseCellIdsInRow(r, 0)
+    }
     
     // Rebalance sizes
     if (rows.length) {
@@ -178,18 +201,13 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     const content = gc.contents.find(c => c.cell === cellId)
     if (content) content.datasourceName = datasourceName
   }
-
-  // Writes chart-specific field values straight into the real stored cell,
-  // same as updateCellChart/updateCellDatasource — so field edits can never be
-  // silently discarded by a `gridRows` recompute triggered by another edit.
-  function updateCellField(ri, ci, key, value) {
+  function updateCellField(ri, ci, key, value){
     const gc = getGridContainer()
-    if (!gc?.contents) return
+    if(!gc.contents) return
     const cellId = `dashboard-cell-${ri + 1}-${ci + 1}`
     const content = gc.contents.find(c => c.cell === cellId)
-    if (content) content[key] = value
+    if(content) content[key] = value
   }
-
   return {
     gridRows,
     addCell,
@@ -198,9 +216,10 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     removeRow,
     updateCellChart,
     updateCellDatasource,
-    updateCellField,
-    updateRowSize,
-    updateCellSize,
     cellId,
+    updateCellField,
+    clampSize,
+    updateCellSize,
+    updateRowSizes,
   }
 }

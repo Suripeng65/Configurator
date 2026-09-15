@@ -16,11 +16,11 @@ const rows = computed(() => data.value ?? [])
   <div class="view-wrap" v-if="route.name === 'Dataset'">
     <!-- Page header -->
     <Banner>
-      <template #buttons>
+      <!-- <template #buttons>
         <BButtonGroup>
           <RouterLink to="/dataset/create" class="btn btn-primary">Create</RouterLink>
         </BButtonGroup>
-      </template>
+      </template> -->
     </Banner>
 
     <!-- Loading / error -->
@@ -39,26 +39,17 @@ const rows = computed(() => data.value ?? [])
   display: flex;
   flex-direction: column;
   height: 100%;
-  min-width: 0;
   overflow: hidden;
   background: #f9fafb;
+  min-width:0px;
 }
 
 .table-wrap {
   flex: 1;
   overflow: auto;
   padding: 16px;
-  min-width: 0;
 }
-
-/* Force a visible, always-drawn scrollbar instead of the OS's auto-hiding
-   overlay style, so it's obvious the table can scroll horizontally. */
-.table-wrap :deep(.table-responsive) { scrollbar-width: auto; }
-.table-wrap :deep(.table-responsive)::-webkit-scrollbar { height: 10px; }
-.table-wrap :deep(.table-responsive)::-webkit-scrollbar-track { background: #f3f4f6; }
-.table-wrap :deep(.table-responsive)::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 5px; }
-.table-wrap :deep(.table-responsive)::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-
+.dataset-table {min-width:1200px;}
 .dataset-table :deep(td) { vertical-align: middle; padding: 6px 10px; }
 .dataset-table :deep(th) { background: #f3f4f6; font-size: 12px; font-weight: 600; color: #374151; }
 .date-cell { font-size: 12px; color: #6b7280; }

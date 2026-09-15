@@ -1,16 +1,22 @@
-import type { AdaptComponentSchema } from './types'
-
-const schema: AdaptComponentSchema = {
-  title: 'Pie Chart',
-  'x-catalog': { group: 'chart' },
-  type: 'object',
-  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
-  properties: {
-    component: { const: 'PieChart' },
-    datasourceName: { type: 'string', default: '/', 'x-widget': 'datasource' },
-    'generate-report': { type: 'boolean' },
-  },
-  required: ['component'],
+export default{
+    id:'PieChart',
+    label: 'Pie Chart',
+    fields:[
+     {
+        key: 'generate-report', 
+        type:'checkboxArray', 
+        value: [],
+        options: [
+          { text: 'Jasper', value: 'jasper' },
+          { text: 'CSV', value: 'csv' },
+        ]
+      },
+      {key: 'boost-point-threshold', type:'number', value:'', placeholder: 'Threshold for boost mode'},
+    //   {
+    //     key: 'x-axis',
+    //     type: 'object',
+    //     value: { dim: '' },
+    //     placeholder: 'Enter dimension name (e.g., report_dt)'
+    //   }
+    ]
 }
-
-export default schema

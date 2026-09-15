@@ -3,12 +3,17 @@ import { inject, ref, computed, watch } from 'vue'
 import useEditorWorkflow from "@src/composables/EditorWorkflow";
 import { uiTemplatesQueries } from '@src/queries'
 import { ADAPT_COMPONENTS } from '@src/components/AdaptComponents/index';
-import { getOwnFieldKeys, fieldSchema } from '@src/components/AdaptComponents/schemaUtils'
 import { useLayoutEditor } from '@src/composables/useLayoutEditor'
 import { useGridEditor } from '@src/composables/useGridEditor'
 import {findComponents} from "@src/utils/datasources.util.ts";
-import ComponentNode from '@src/components/user/ComponentNode.vue'
-import { useTabManager }   from '@src/composables/useTabManager'
+import ComponentNode from '@src/components/LayoutEditor/ComponentNode.vue'
+import { useTabManager }   from '@src/composables/useTabManager.js'
+import HierarchyForm from '@src/components/HierarchyForm.vue'
+import ArrayOfObjectsEditor from '@src/components/ArrayOfObjectsEditor.vue'
+import ArrayOfStringsEditor from '@src/components/ArrayOfStringsEditor.vue'
+import ObjectEditor from '@src/components/ObjectEditor.vue'
+import { Splitpanes, Pane } from 'splitpanes'
+import 'splitpanes/dist/splitpanes.css'
 
 const meta  = inject<any>('meta')
 const { setValue, addChild, deleteNode } = useLayoutEditor(meta)
@@ -34,14 +39,11 @@ const {
 
 const adaptLibrary = computed(()=>{
   return Object.entries(ADAPT_COMPONENTS).reduce((acc, curr)=>{
-    const [name, schema] = curr
+    const [name, def] = curr
     acc[name] = {
-      id: schema?.id ?? null,
-      label: schema.title,
-      fields: getOwnFieldKeys(schema).map(key => {
-        const fs = fieldSchema(schema, key)
-        return { key, type: fs?.type ?? 'string', default: fs?.default }
-      })
+      id:def?.id ?? null,
+      label: def.label,
+      fields: def.fields.map(field => ({ ...field }))
     }
     return acc
   },{})
@@ -50,15 +52,15 @@ const adaptLibrary = computed(()=>{
 const {
   cellId,
   gridRows,
-  updateRowSize,
   updateCellSize,
+  updateRowSizes,
   addCell,
   addRow,
   removeRow,
   updateCellChart,
   updateCellDatasource,
-  updateCellField,
-  removeCell
+  removeCell,
+  updateCellField
 } = useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
 
 const datasources = computed(()=>{ 
@@ -79,18 +81,12 @@ const accessibleDatasources = computed(()=>{
     return ds.fullPathArray.includes(key) || ds.path.match(pattern)
   })
 })
-// Every grid edit (chart type, datasource, fields, row/cell size, add/remove
-// row/cell) writes straight into meta.layout.viz the moment it happens — see
-// the update*/add*/remove* functions in useGridEditor.ts. New tabs already get
-// full datasources/right-panel/generate-report defaults from createTab() in
-// useTabManager.ts. So there is nothing left to explicitly "save" for this tab:
-// the top-level Save button (EditorButtons) always persists current state.
 
 </script>
 
 <template>
-  <div class="layout-editor">
-    <aside class="left-pane">
+  <Splitpanes class="layout-editor">
+    <Pane class="left-pane" size="25">
       <!-- LEFT PANEL -->
        <div class="panel">
         <div class="panel-header">
@@ -107,11 +103,10 @@ const accessibleDatasources = computed(()=>{
         />
         <p v-else class="text-muted small fst-italic px-1 mt-3">No MonitorPanel found in left-panel config.</p>
       </div>
-    </aside>
-    <div class="pane-divider" ></div>
+    </Pane>
+    <Pane class="right-pane">
     <BTabs
       v-model="activeTabIndex"
-      class="right-pane"
       nav-class="layout-tab-nav"
       content-class="layout-tab-content"
     >
@@ -159,59 +154,132 @@ const accessibleDatasources = computed(()=>{
                     <BButton v-else variant="link" size="sm" class="text-danger p-0 lh-1" @click="removeRow(ri)" title="Remove Row">X</BButton>
 
                     </div>
-                    <BFormSelect :model-value="cell.chart" size="sm" @update:model-value="(val) => updateCellChart(ri, ci, val)">
-                      <option v-for="c in Object.keys(adaptLibrary)" :key="c" :value="c">{{ adaptLibrary[c].label }}</option>
-                    </BFormSelect>
-                    
-                    <BFormSelect :model-value="cell.datasourceName" size="sm" @update:model-value="(val) => updateCellDatasource(ri, ci, val)">
-                      <option :value="undefined" disabled>Select a datasource…</option>
-                      <option v-for="ds in accessibleDatasources" :key="ds.path" :value="ds.matchedObject.name">
-                        {{ ds.matchedObject.name }}
-                      </option>
-                    </BFormSelect>
-
-                     <div class="d-flex align-items-center justify-content-between gap-1 mt-1">
-                    <BInputGroup size="sm">
-                      <BInputGroupText>w</BInputGroupText>
-                      <BFormInput type="number" :model-value="cell.size" min="5" max="95" style="width:46px" @change="updateCellSize(ri, ci, Number($event.target.value))" />
-                      <BInputGroupText>%</BInputGroupText>
-                    </BInputGroup>
-
-                    <!-- <BButton v-if="row.cells.length > 1" variant="link" size="sm" class="text-danger p-0 lh-1" @click="removeCell(ri, ci)" title="Remove cell">×</BButton> -->
-                  </div>
+                    <div  class="field-row">
+                      <label class="field-label">Chart</label>
+                      <BFormSelect :model-value="cell.chart" size="sm" @update:model-value="(val) => updateCellChart(ri, ci, val)">
+                        <option v-for="c in Object.keys(adaptLibrary)" :key="c" :value="c">{{ adaptLibrary[c].label }}</option>
+                      </BFormSelect>
+                    </div>
+                   <div  class="field-row">
+                      <label class="field-label">Datasource</label>
+                      <BFormSelect :model-value="cell.datasourceName" size="sm" @update:model-value="(val) => updateCellDatasource(ri, ci, val)">
+                        <option :value="undefined" disabled> Select a datasource...</option>
+                        <option v-for="ds in accessibleDatasources" :key="ds.path" :value="ds.matchedObject.name">
+                          {{ ds.matchedObject.name }} 
+                        </option>
+                      </BFormSelect>
+                    </div>
+                    <div  class="field-row">
+                       <label class="field-label">Container Width</label>
+                        <div class="d-flex align-items-center justify-content-between gap-1 mt-1">
+                        <BInputGroup size="sm">
+                          <BInputGroupText>w</BInputGroupText>
+                          <BFormInput type="number" :model-value="cell.size" min="5" max="95" style="width:46px" @change="updateCellSize(ri, ci, Number($event.target.value))" />
+                          <BInputGroupText>%</BInputGroupText>
+                        </BInputGroup>
+                      </div>
+                    </div>
+                   
                     <!-- Chart-specific properties -->
                     <div v-if="cell.chart && adaptLibrary[cell.chart]" class="chart-properties">
                       <div v-for="field in adaptLibrary[cell.chart].fields" :key="field.key" class="property-field">
                         <!-- String field -->
-                        <BFormGroup v-if="field.type === 'string'" :label="field.key">
-                          <BFormInput
-                            :model-value="cell[field.key]"
+                        <div v-if="field.type === 'string'" class="field-row">
+                          <label class="field-label">{{ field.key }}</label>
+                          <BFormInput 
+                            :model-value="cell[field.key]" 
                             size="sm"
                             :placeholder="field.placeholder ?? ''"
                             @change="updateCellField(ri, ci, field.key, $event.target.value)"
                           />
-                        </BFormGroup>
-
+                        </div>
                         <!-- Boolean field -->
-                        <BFormGroup v-else-if="field.type === 'boolean'" :label="field.key">
+                        <div v-else-if="field.type === 'boolean'" class="field-row">
+                          <label class="field-label">{{ field.key || field.key}}</label>
                           <BFormRadioGroup
-                            :model-value="cell[field.key]"
+                            :model-value="cell[field.key]" 
                             :options="[{ text: 'True', value: true }, { text: 'False', value: false }]"
-                            @update:model-value="updateCellField(ri, ci, field.key, $event)"
-                            >
-                          </BFormRadioGroup>
-                        </BFormGroup>
-
+                            @change="updateCellField(ri, ci, field.key, $event.target.value === 'true')"
+                          />
+                        </div>
                         <!-- Number field -->
-                        <BFormGroup v-else-if="field.type === 'number'" :label="field.key">
-                          <BFormInput
-                            :model-value="cell[field.key]"
+                        <div v-else-if="field.type === 'number'" class="field-row">
+                          <label class="field-label">{{ field.key }}</label>
+                          <BFormInput 
+                            :model-value="cell[field.key]" 
                             type="number"
                             size="sm"
-                            :placeholder="field.placeholder ?? ''"
+                            :placeholder="field.placeholder ?? ''" 
                             @change="updateCellField(ri, ci, field.key, Number($event.target.value))"
                           />
-                        </BFormGroup>
+                        </div>
+                        <!-- checkboxes field -->
+                        <div v-else-if="field.type === 'checkboxArray'" class="field-row">
+                          <label class="field-label">{{ field.key }}</label>
+                          <BFormCheckboxGroup
+                            :model-value="cell[field.key]"
+                            :options="field.options || []"
+                            size="sm"
+                            @update:model-value="updateCellField(ri, ci, field.key, $event)"
+                          />
+                        </div>
+                        <!-- Object field -->
+                        <div v-else-if="field.type === 'object'" class="field-row">
+                          <label class="field-label">{{ field.key }}</label>
+                          <ObjectEditor
+                          :model-value="cell[field.key] || {}"
+                          :schema="field.schema || []"
+                          :label="field.key"
+                          @update:model-value="updateCellField(ri, ci, field.key, $event)"
+                        />
+                        </div>
+                        <!-- String array field (plot-bands, etc.) -->
+                        <div v-else-if="field.type === 'stringArray'" class="field-row">
+                          <label class="field-label">{{ field.key }}</label>
+                          <ArrayOfStringsEditor
+                            :model-value="cell[field.key] || []"
+                            :label="field.key"
+                            :placeholder="field.placeholder"
+                            @update:model-value="updateCellField(ri, ci, field.key, $event)"
+                          />
+                        </div>
+
+                        <!-- Dropdown field -->
+                        <div v-else-if="field.type === 'dropdown'" class="field-row">
+                          <label class="field-label">{{ field.key }}</label>
+                          <BFormSelect 
+                          :model-value="cell[field.key]" 
+                          size="sm" 
+                          @update:model-value="updateCellField(ri, ci, field.key, $event)">
+                            <option v-for="option in field.options" :key="option" :value="option">{{ option }}</option>
+                          </BFormSelect>
+                        </div>
+                        <!-- Hierarchy field -->
+                        <div v-else-if="field.type === 'hierarchy'" class="field-row">
+                         <HierarchyForm 
+                            :model-value="cell[field.key]" 
+                            :label="field.key"
+                            :radio-options="field.radioOptions || [
+                              { text: 'List of Strings', value: 'array' },
+                              { text: 'Object', value: 'object' }
+                            ]"
+                            :array-label="field.arrayLabel"
+                            :object-label="field.objectLabel"
+                            :array-placeholder="field.arrayPlaceholder"
+                            :object-placeholder="field.objectPlaceholder"
+                            @update:model-value="updateCellField(ri, ci, field.key, $event)"
+                          />
+                        </div>
+                        <!-- Array of Objects field -->
+                        <div v-else-if="field.type === 'arrayOfObjects'" class="field-row">
+                          <label class="field-label">{{ field.key }}</label>
+                          <ArrayOfObjectsEditor
+                            :model-value="cell[field.key] || []"
+                            :object-schema="field.objectSchema || []"
+                            :label="field.key"
+                            @update:model-value="updateCellField(ri, ci, field.key, $event)"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -219,10 +287,10 @@ const accessibleDatasources = computed(()=>{
             </div>
             <div class="d-flex flex-column gap-1 mb-3">
               <div v-for="(row, ri) in gridRows" :key="ri" class="d-flex align-items-center gap-2 px-2 py-1 bg-light rounded">
-                <span class="text-muted small" style="min-width:60px">Row {{ ri + 1 }}</span>
+                <span class="text-muted small" style="min-width:60px">Row {{ Number(ri) + 1 }}</span>
                 <BInputGroup size="sm" style="width:auto">
                   <BInputGroupText>h</BInputGroupText>
-                  <BFormInput type="number" :model-value="row.size" min="5" max="95" style="width:60px" @change="updateRowSize(ri, Number($event.target.value))" />
+                  <BFormInput type="number" :model-value="row.size" min="5" max="95" style="width:60px" @change="updateRowSizes(ri, Number($event.target.value))" />
                   <BInputGroupText>%</BInputGroupText>
                 </BInputGroup>
                 <BButton size="sm" variant="outline-secondary" :disabled="row.cells.length >= 4" @click="addCell(ri)">+ cell</BButton>
@@ -232,23 +300,14 @@ const accessibleDatasources = computed(()=>{
 
             <BButton variant="outline-secondary" size="sm" :disabled="gridRows.length >= 6" @click="addRow">+ Add Row</BButton>
            </BCard>
-
-           <!-- Fallback: tab isn't in the standard GridContainer shape (missing or
-                out-of-date/differently-structured template) — render its raw
-                contents generically instead of hiding the data behind a fake grid. -->
            <div v-else class="fallback-tree">
-            <p class="text-muted small fst-italic px-1 mb-3">
-              This tab doesn't use the standard grid layout (no GridContainer found) — showing its raw structure below.
-            </p>
-            <ComponentNode
+            <p class="text-muted small fst-italic px-1 mb-3">This tab does not use the standard grid layout. Showing the raw structure with the best effort.</p>
+             <ComponentNode
               v-if="mainPanel?.[activeTabKey]"
               :item="mainPanel[activeTabKey]"
               :path="['viz', 'main-panel', activeTabKey]"
               :depth="0"
             />
-            <p v-else class="text-muted small fst-italic px-1">
-              No content in this tab.
-            </p>
            </div>
         </div>
       </BTab>
@@ -258,7 +317,8 @@ const accessibleDatasources = computed(()=>{
         </li>
       </template>
     </BTabs>
-  </div>
+    </Pane>
+  </Splitpanes>
 </template>
 
 <style scoped>
@@ -364,7 +424,6 @@ const accessibleDatasources = computed(()=>{
 
 /* ── Tab body ── */
 .content-body { padding: 20px 28px 32px; }
-.fallback-tree { display: flex; flex-direction: column; gap: 4px; }
 
 /* ── Grid preview ── */
 .grid-preview {
@@ -410,4 +469,35 @@ const accessibleDatasources = computed(()=>{
 .panel-header { margin-bottom: 16px; }
 .panel-title  { font-size: 16px; font-weight: 700; color: #111; margin: 0; }
 .panel-subtitle { font-size: 12px; color: #6b7280; margin-top: 4px; line-height: 1.5; margin-bottom: 0; }
+.fallback-tree{
+  display:flex;
+  flex-direction:column;
+  gap: 4px;
+}
+
+/* ── Chart properties inline layout ── */
+.chart-properties {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.field-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.field-label {
+  min-width: 120px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+  margin-bottom: 0;
+}
+
+.field-row > :not(.field-label) {
+  flex: 1;
+}
 </style>
