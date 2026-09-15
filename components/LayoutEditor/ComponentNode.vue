@@ -1,6 +1,7 @@
 
 <script setup>
 import { ref, computed, nextTick, inject } from 'vue'
+import draggable from 'vuedraggable'
 import { JsonForms } from '@jsonforms/vue'
 import { BButton, BFormInput, BFormSelect, BFormCheckbox, BFormTextarea } from 'bootstrap-vue-next'
 import { useLayoutEditor } from '../../composables/useLayoutEditor'
@@ -8,6 +9,16 @@ import { ADAPT_COMPONENTS } from '../AdaptComponents/index.js'
 import { getOwnFieldKeys, ownSchemaFor, ownFormData, buildNodeFromSchema, groupedComponents } from '../AdaptComponents/schemaUtils'
 import { renderers } from './jsonforms/renderers'
 import {  isFlatArray, isMultiline } from '@src/utils/grid-row-parser'
+
+// vuedraggable needs a stable per-item key; these node configs have no id
+// field of their own (and one shouldn't be written into them — the whole
+// layout tree is persisted verbatim), so key off object identity instead.
+const childKeys = new WeakMap()
+let childKeySeq = 0
+function childKey(el) {
+  if (!childKeys.has(el)) childKeys.set(el, `ck${childKeySeq++}`)
+  return childKeys.get(el)
+}
 
 const CODE_KEYS = new Set(['dim', 'datasourceName', 'ruleName', 'id', 'cell'])  // render with code style
 const NAME_KEYS = ['displayName', 'groupName', 'label', 'title']  //render with text style
@@ -164,6 +175,13 @@ function cancelAddChild() {
     <div class="cn-header" @click="expanded = !expanded">
       <span class="cn-arrow" :class="{ expanded }"> > </span>
 
+      <span
+        v-if="depth > 0"
+        class="cn-drag-handle"
+        title="Drag to reorder"
+        @click.stop
+      >⠿</span>
+
       <BFormInput
         v-if="editingName"
         ref="nameInputEl"
@@ -299,15 +317,26 @@ function cancelAddChild() {
         <BButton v-else variant="outline-secondary" size="sm" class="cn-dashed-btn" @click="showAddField = true">+ field</BButton>
       </template>
 
-      <!-- Recursive children -->
+      <!-- Recursive children (drag handle = .cn-drag-handle in each child's header) -->
       <div class="cn-children">
-        <ComponentNode
-          v-for="(child, idx) in (item.contents || [])"
-          :key="idx"
-          :item="child"
-          :path="[...path, 'contents', idx]"
-          :depth="depth + 1"
-        />
+        <draggable
+          :list="item.contents || []"
+          :item-key="childKey"
+          tag="div"
+          class="cn-children-list"
+          handle=".cn-drag-handle"
+          :animation="150"
+          ghost-class="cn-ghost"
+          drag-class="cn-drag-active"
+        >
+          <template #item="{ element, index }">
+            <ComponentNode
+              :item="element"
+              :path="[...path, 'contents', index]"
+              :depth="depth + 1"
+            />
+          </template>
+        </draggable>
 
         <div v-if="showAddChild" class="cn-add-row cn-add-row--child">
           <BFormSelect v-model="newChildType" size="sm" class="cn-af-select">
@@ -367,6 +396,18 @@ function cancelAddChild() {
 
 .cn-arrow { font-size: 9px; color: #9ca3af; transition: transform 0.15s; flex-shrink: 0; }
 .cn-arrow.expanded { transform: rotate(90deg); }
+
+.cn-drag-handle {
+  cursor: grab;
+  color: #9ca3af;
+  font-size: 12px;
+  letter-spacing: -1px;
+  flex-shrink: 0;
+  padding: 0 2px;
+  line-height: 1;
+}
+.cn-drag-handle:hover { color: #6366f1; }
+.cn-drag-handle:active { cursor: grabbing; }
 
 .cn-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cn-name[title] { cursor: text; }
@@ -433,36 +474,160 @@ function cancelAddChild() {
 /* ── JSON textarea ── */
 .cn-ftextarea--json { background: #1e1e2e !important; color: #cdd6f4 !important; font-size: 10px; font-family: monospace; }
 
-/* ── JSONForms field panel (vue-vanilla default renderers, lightly aligned
-   with the rest of this component's cn-* styling) ── */
-.cn-jsonforms { font-size: 12px; }
-.cn-jsonforms:deep(.vertical-layout-item) { margin-bottom: 6px; }
-.cn-jsonforms:deep(.control) { display: flex; flex-direction: column; gap: 2px; }
-.cn-jsonforms:deep(.label) {
-  font-size: 11px;
-  color: #6b7280;
-  font-family: monospace;
+/* ── JSONForms field panel (vue-vanilla default renderers get almost no
+   built-in CSS — fieldset/legend in particular fall back to raw browser
+   styles, which is why this needs a fuller reset than just a few classes) ── */
+.cn-jsonforms { font-size: 12px; max-width: 100%; }
+.cn-jsonforms :deep(*) { box-sizing: border-box; }
+
+.cn-jsonforms:deep(fieldset) { border: none; margin: 0; padding: 0; min-width: 0; width: 100%; }
+.cn-jsonforms:deep(legend) { all: unset; display: block; width: 100%; }
+
+.cn-jsonforms:deep(.vertical-layout) { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.cn-jsonforms:deep(.vertical-layout-item) { min-width: 0; }
+.cn-jsonforms:deep(.horizontal-layout) { display: flex; gap: 8px; min-width: 0; }
+.cn-jsonforms:deep(.horizontal-layout-item) { flex: 1; min-width: 0; }
+
+/* label column + input column on one line; error/description span both
+   columns on their own row below, so they don't get squeezed next to the input */
+.cn-jsonforms:deep(.control) {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
 }
-.cn-jsonforms:deep(.input),
+.cn-jsonforms:deep(.label) {
+  grid-column: 1;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+}
+.cn-jsonforms:deep(.wrapper) { grid-column: 2; min-width: 0; }
+.cn-jsonforms:deep(.asterisk) { color: #dc2626; margin-left: 2px; }
+.cn-jsonforms:deep(.description),
+.cn-jsonforms:deep(.error) { grid-column: 1 / -1; font-size: 11px; }
+.cn-jsonforms:deep(.description) { color: #9ca3af; }
+.cn-jsonforms:deep(.error) { color: #dc2626; }
+
+.cn-jsonforms:deep(.input:not([type="checkbox"])),
 .cn-jsonforms:deep(.select),
 .cn-jsonforms:deep(.text-area) {
   font-size: 12px;
-  padding: 4px 8px;
+  padding: 5px 8px;
   border: 1px solid #d1d5db;
-  border-radius: 4px;
+  border-radius: 5px;
   font-family: inherit;
+  background: #fff;
+  width: 100%;
 }
-.cn-jsonforms:deep(.error) { font-size: 11px; color: #dc2626; }
-.cn-jsonforms:deep(.array-list-add) {
+.cn-jsonforms:deep(.input:not([type="checkbox"]):focus),
+.cn-jsonforms:deep(.select:focus),
+.cn-jsonforms:deep(.text-area:focus) { outline: none; border-color: #6366f1; }
+.cn-jsonforms:deep(input[type="checkbox"].input) { width: auto; flex-shrink: 0; margin: 0; }
+
+/* Nested object fields (e.g. pin-bottom, x-axis) */
+.cn-jsonforms:deep(.group) {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.cn-jsonforms:deep(.group-label) {
   font-size: 11px;
+  font-weight: 700;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+.cn-jsonforms:deep(.group-item) { margin-bottom: 6px; }
+.cn-jsonforms:deep(.group-item:last-child) { margin-bottom: 0; }
+
+/* Array fields (arrayOfObjects / plain string arrays) */
+.cn-jsonforms:deep(.array-list) {
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.cn-jsonforms:deep(.array-list-legend) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.cn-jsonforms:deep(.array-list-label) {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+}
+.cn-jsonforms:deep(.array-list-add) {
+  font-size: 12px;
+  line-height: 1;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
   border: 1px dashed #9ca3af;
   background: none;
   border-radius: 4px;
-  padding: 3px 8px;
   cursor: pointer;
   color: #6b7280;
 }
 .cn-jsonforms:deep(.array-list-add:hover) { border-color: #6366f1; color: #6366f1; }
+.cn-jsonforms:deep(.array-list-add:disabled) { opacity: 0.4; cursor: not-allowed; }
+
+.cn-jsonforms:deep(.array-list-item-wrapper) { margin-bottom: 6px; }
+.cn-jsonforms:deep(.array-list-item-wrapper:last-child) { margin-bottom: 0; }
+.cn-jsonforms:deep(.array-list-item) {
+  border: 1px solid #f0f0f0;
+  border-radius: 5px;
+  background: #fafafa;
+}
+.cn-jsonforms:deep(.array-list-item-toolbar) {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+.cn-jsonforms:deep(.array-list-item-label) {
+  flex: 1;
+  min-width: 0;
+  font-size: 11px;
+  color: #6b7280;
+  font-family: monospace;
+}
+.cn-jsonforms:deep(.array-list-item-move-up),
+.cn-jsonforms:deep(.array-list-item-move-down),
+.cn-jsonforms:deep(.array-list-item-delete) {
+  border: none;
+  background: none;
+  color: #9ca3af;
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1;
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+.cn-jsonforms:deep(.array-list-item-move-up:hover),
+.cn-jsonforms:deep(.array-list-item-move-down:hover) { color: #6366f1; }
+.cn-jsonforms:deep(.array-list-item-delete:hover) { color: #dc2626; }
+.cn-jsonforms:deep(.array-list-item-move-up:disabled),
+.cn-jsonforms:deep(.array-list-item-move-down:disabled),
+.cn-jsonforms:deep(.array-list-item-delete:disabled) { opacity: 0.3; cursor: not-allowed; }
+.cn-jsonforms:deep(.array-list-item-content) {
+  padding: 8px;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.cn-jsonforms:deep(.array-list-no-data) {
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+  padding: 4px 0;
+}
 
 /* ── Add rows ── */
 .cn-add-row {
@@ -494,4 +659,11 @@ function cancelAddChild() {
   gap: 4px;
   padding-top: 4px;
 }
+.cn-children-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.cn-children-list:deep(.cn-ghost) { opacity: 0.35; }
+.cn-children-list:deep(.cn-drag-active) { cursor: grabbing; }
 </style>
