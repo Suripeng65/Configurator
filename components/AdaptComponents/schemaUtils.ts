@@ -51,6 +51,27 @@ export function buildNodeFromSchema(name: string, schema: AdaptComponentSchema |
   return config
 }
 
+// Self-contained schema scoped to a component's own editable properties (no
+// `$ref`, so JSONForms' own internal ajv can validate it directly) — shared
+// by every JSONForms-driven field panel (ComponentNode.vue's tree row, the
+// dashboard grid-cell chart-property panel) so there's one implementation
+// instead of one per consumer.
+export function ownSchemaFor(schema: AdaptComponentSchema | null | undefined) {
+  if (!schema) return null
+  const keys = getOwnFieldKeys(schema)
+  return {
+    type: 'object',
+    properties: Object.fromEntries(keys.map(k => [k, fieldSchema(schema, k)])),
+    required: (schema.required ?? []).filter(k => keys.includes(k)),
+  }
+}
+
+// Picks a component's own field values off any data object (a layout-tree
+// node, a grid cell) into the flat shape `ownSchemaFor` describes.
+export function ownFormData(schema: AdaptComponentSchema | null | undefined, source: Record<string, any>) {
+  return Object.fromEntries(getOwnFieldKeys(schema).map(k => [k, source?.[k]]))
+}
+
 // Groups the registry by `x-catalog.group` for the "add child" picker UI.
 export function groupedComponents(registry: Record<string, AdaptComponentSchema>) {
   const groups: Record<string, Array<{ key: string; label: string }>> = {}

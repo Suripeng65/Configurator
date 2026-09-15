@@ -5,7 +5,7 @@ import { JsonForms } from '@jsonforms/vue'
 import { BButton, BFormInput, BFormSelect, BFormCheckbox, BFormTextarea } from 'bootstrap-vue-next'
 import { useLayoutEditor } from '../../composables/useLayoutEditor'
 import { ADAPT_COMPONENTS } from '../AdaptComponents/index.js'
-import { getOwnFieldKeys, fieldSchema, buildNodeFromSchema, groupedComponents } from '../AdaptComponents/schemaUtils'
+import { getOwnFieldKeys, ownSchemaFor, ownFormData, buildNodeFromSchema, groupedComponents } from '../AdaptComponents/schemaUtils'
 import { renderers } from './jsonforms/renderers'
 import {  isFlatArray, isMultiline } from '@src/utils/grid-row-parser'
 
@@ -42,22 +42,8 @@ const fieldKeys   = computed(() =>
 // to the plain typeof-based cascade below when there's no schema match.
 const componentDef = computed(() => ADAPT_COMPONENTS[props.item.component] ?? null)
 
-// Self-contained schema scoped to this node's own editable properties (no
-// $ref, so JSONForms' own internal ajv can validate it directly).
-const ownSchema = computed(() => {
-  const schema = componentDef.value
-  if (!schema) return null
-  const keys = getOwnFieldKeys(schema)
-  return {
-    type: 'object',
-    properties: Object.fromEntries(keys.map(k => [k, fieldSchema(schema, k)])),
-    required: (schema.required ?? []).filter(k => keys.includes(k)),
-  }
-})
-const formData = computed(() => {
-  const keys = getOwnFieldKeys(componentDef.value)
-  return Object.fromEntries(keys.map(k => [k, props.item[k]]))
-})
+const ownSchema = computed(() => ownSchemaFor(componentDef.value))
+const formData  = computed(() => ownFormData(componentDef.value, props.item))
 function onFormChange({ data }) {
   for (const key of getOwnFieldKeys(componentDef.value)) {
     if (data[key] !== props.item[key]) setField(key, data[key])

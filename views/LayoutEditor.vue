@@ -3,15 +3,14 @@ import { inject, ref, computed, watch } from 'vue'
 import useEditorWorkflow from "@src/composables/EditorWorkflow";
 import { uiTemplatesQueries } from '@src/queries'
 import { ADAPT_COMPONENTS } from '@src/components/AdaptComponents/index';
+import { ownSchemaFor, ownFormData, getOwnFieldKeys } from '@src/components/AdaptComponents/schemaUtils';
 import { useLayoutEditor } from '@src/composables/useLayoutEditor'
 import { useGridEditor } from '@src/composables/useGridEditor'
 import {findComponents} from "@src/utils/datasources.util.ts";
 import ComponentNode from '@src/components/LayoutEditor/ComponentNode.vue'
 import { useTabManager }   from '@src/composables/useTabManager.js'
-import HierarchyForm from '@src/components/HierarchyForm.vue'
-import ArrayOfObjectsEditor from '@src/components/ArrayOfObjectsEditor.vue'
-import ArrayOfStringsEditor from '@src/components/ArrayOfStringsEditor.vue'
-import ObjectEditor from '@src/components/ObjectEditor.vue'
+import { JsonForms } from '@jsonforms/vue'
+import { renderers } from '@src/components/LayoutEditor/jsonforms/renderers'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
 
@@ -37,18 +36,6 @@ const {
   startEdit, commitEdit, createTab, deleteTab
 } = useTabManager(mainPanel, { setValue, deleteNode, addChild })
 
-const adaptLibrary = computed(()=>{
-  return Object.entries(ADAPT_COMPONENTS).reduce((acc, curr)=>{
-    const [name, def] = curr
-    acc[name] = {
-      id:def?.id ?? null,
-      label: def.label,
-      fields: def.fields.map(field => ({ ...field }))
-    }
-    return acc
-  },{})
-})
-
 const {
   cellId,
   gridRows,
@@ -61,7 +48,22 @@ const {
   updateCellDatasource,
   removeCell,
   updateCellField
-} = useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
+} = useGridEditor(mainPanel, activeTabKey, {setValue})
+
+// ── Chart-property panel (JSONForms, same schemas/renderers ComponentNode.vue uses) ──
+function cellSchema(chartType) {
+  return ownSchemaFor(ADAPT_COMPONENTS[chartType])
+}
+function cellFormData(cell) {
+  return ownFormData(ADAPT_COMPONENTS[cell.chart], cell)
+}
+function onCellFormChange(ri, ci, cell, { data }) {
+  const schema = ADAPT_COMPONENTS[cell.chart]
+  if (!schema) return
+  for (const key of getOwnFieldKeys(schema)) {
+    if (data[key] !== cell[key]) updateCellField(ri, ci, key, data[key])
+  }
+}
 
 const datasources = computed(()=>{ 
   return findComponents(meta.value.layout, "Datasource")
@@ -157,7 +159,7 @@ const accessibleDatasources = computed(()=>{
                     <div  class="field-row">
                       <label class="field-label">Chart</label>
                       <BFormSelect :model-value="cell.chart" size="sm" @update:model-value="(val) => updateCellChart(ri, ci, val)">
-                        <option v-for="c in Object.keys(adaptLibrary)" :key="c" :value="c">{{ adaptLibrary[c].label }}</option>
+                        <option v-for="c in Object.keys(ADAPT_COMPONENTS)" :key="c" :value="c">{{ ADAPT_COMPONENTS[c].title }}</option>
                       </BFormSelect>
                     </div>
                    <div  class="field-row">
@@ -181,106 +183,13 @@ const accessibleDatasources = computed(()=>{
                     </div>
                    
                     <!-- Chart-specific properties -->
-                    <div v-if="cell.chart && adaptLibrary[cell.chart]" class="chart-properties">
-                      <div v-for="field in adaptLibrary[cell.chart].fields" :key="field.key" class="property-field">
-                        <!-- String field -->
-                        <div v-if="field.type === 'string'" class="field-row">
-                          <label class="field-label">{{ field.key }}</label>
-                          <BFormInput 
-                            :model-value="cell[field.key]" 
-                            size="sm"
-                            :placeholder="field.placeholder ?? ''"
-                            @change="updateCellField(ri, ci, field.key, $event.target.value)"
-                          />
-                        </div>
-                        <!-- Boolean field -->
-                        <div v-else-if="field.type === 'boolean'" class="field-row">
-                          <label class="field-label">{{ field.key || field.key}}</label>
-                          <BFormRadioGroup
-                            :model-value="cell[field.key]" 
-                            :options="[{ text: 'True', value: true }, { text: 'False', value: false }]"
-                            @change="updateCellField(ri, ci, field.key, $event.target.value === 'true')"
-                          />
-                        </div>
-                        <!-- Number field -->
-                        <div v-else-if="field.type === 'number'" class="field-row">
-                          <label class="field-label">{{ field.key }}</label>
-                          <BFormInput 
-                            :model-value="cell[field.key]" 
-                            type="number"
-                            size="sm"
-                            :placeholder="field.placeholder ?? ''" 
-                            @change="updateCellField(ri, ci, field.key, Number($event.target.value))"
-                          />
-                        </div>
-                        <!-- checkboxes field -->
-                        <div v-else-if="field.type === 'checkboxArray'" class="field-row">
-                          <label class="field-label">{{ field.key }}</label>
-                          <BFormCheckboxGroup
-                            :model-value="cell[field.key]"
-                            :options="field.options || []"
-                            size="sm"
-                            @update:model-value="updateCellField(ri, ci, field.key, $event)"
-                          />
-                        </div>
-                        <!-- Object field -->
-                        <div v-else-if="field.type === 'object'" class="field-row">
-                          <label class="field-label">{{ field.key }}</label>
-                          <ObjectEditor
-                          :model-value="cell[field.key] || {}"
-                          :schema="field.schema || []"
-                          :label="field.key"
-                          @update:model-value="updateCellField(ri, ci, field.key, $event)"
-                        />
-                        </div>
-                        <!-- String array field (plot-bands, etc.) -->
-                        <div v-else-if="field.type === 'stringArray'" class="field-row">
-                          <label class="field-label">{{ field.key }}</label>
-                          <ArrayOfStringsEditor
-                            :model-value="cell[field.key] || []"
-                            :label="field.key"
-                            :placeholder="field.placeholder"
-                            @update:model-value="updateCellField(ri, ci, field.key, $event)"
-                          />
-                        </div>
-
-                        <!-- Dropdown field -->
-                        <div v-else-if="field.type === 'dropdown'" class="field-row">
-                          <label class="field-label">{{ field.key }}</label>
-                          <BFormSelect 
-                          :model-value="cell[field.key]" 
-                          size="sm" 
-                          @update:model-value="updateCellField(ri, ci, field.key, $event)">
-                            <option v-for="option in field.options" :key="option" :value="option">{{ option }}</option>
-                          </BFormSelect>
-                        </div>
-                        <!-- Hierarchy field -->
-                        <div v-else-if="field.type === 'hierarchy'" class="field-row">
-                         <HierarchyForm 
-                            :model-value="cell[field.key]" 
-                            :label="field.key"
-                            :radio-options="field.radioOptions || [
-                              { text: 'List of Strings', value: 'array' },
-                              { text: 'Object', value: 'object' }
-                            ]"
-                            :array-label="field.arrayLabel"
-                            :object-label="field.objectLabel"
-                            :array-placeholder="field.arrayPlaceholder"
-                            :object-placeholder="field.objectPlaceholder"
-                            @update:model-value="updateCellField(ri, ci, field.key, $event)"
-                          />
-                        </div>
-                        <!-- Array of Objects field -->
-                        <div v-else-if="field.type === 'arrayOfObjects'" class="field-row">
-                          <label class="field-label">{{ field.key }}</label>
-                          <ArrayOfObjectsEditor
-                            :model-value="cell[field.key] || []"
-                            :object-schema="field.objectSchema || []"
-                            :label="field.key"
-                            @update:model-value="updateCellField(ri, ci, field.key, $event)"
-                          />
-                        </div>
-                      </div>
+                    <div v-if="cell.chart && ADAPT_COMPONENTS[cell.chart]" class="chart-properties cn-jsonforms">
+                      <json-forms
+                        :schema="cellSchema(cell.chart)"
+                        :data="cellFormData(cell)"
+                        :renderers="renderers"
+                        @change="onCellFormChange(ri, ci, cell, $event)"
+                      />
                     </div>
                   </div>
                 </div>
@@ -500,4 +409,34 @@ const accessibleDatasources = computed(()=>{
 .field-row > :not(.field-label) {
   flex: 1;
 }
+
+/* ── JSONForms chart-property panel (vue-vanilla default renderers) ── */
+.cn-jsonforms { font-size: 12px; }
+.cn-jsonforms:deep(.vertical-layout-item) { margin-bottom: 6px; }
+.cn-jsonforms:deep(.control) { display: flex; flex-direction: column; gap: 2px; }
+.cn-jsonforms:deep(.label) {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+}
+.cn-jsonforms:deep(.input),
+.cn-jsonforms:deep(.select),
+.cn-jsonforms:deep(.text-area) {
+  font-size: 12px;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-family: inherit;
+}
+.cn-jsonforms:deep(.error) { font-size: 11px; color: #dc2626; }
+.cn-jsonforms:deep(.array-list-add) {
+  font-size: 11px;
+  border: 1px dashed #9ca3af;
+  background: none;
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  color: #6b7280;
+}
+.cn-jsonforms:deep(.array-list-add:hover) { border-color: #6366f1; color: #6366f1; }
 </style>

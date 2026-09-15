@@ -1,7 +1,9 @@
 import { computed } from 'vue'
 import { parseGridRows } from '@src/utils/grid-row-parser'
+import { ADAPT_COMPONENTS } from '@src/components/AdaptComponents/index'
+import { getOwnFieldKeys } from '@src/components/AdaptComponents/schemaUtils'
 
-export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue}) {
+export function useGridEditor(mainPanel, activeTabKey, {setValue}) {
   const gridRows = computed(() => {
     const key = activeTabKey.value
     if (!key || !mainPanel.value?.[key]) {
@@ -18,10 +20,10 @@ export function useGridEditor(mainPanel, activeTabKey, adaptLibrary, {setValue})
     // instead of pre-filling a schema default before the user has chosen one.
     for (const row of rows) {
       for (const cell of row.cells) {
-        const def = adaptLibrary.value[cell.chart]
-        for (const field of def?.fields ?? []) {
-          if (cell[field.key] === undefined && field.key in (cell.chartMeta ?? {})) {
-            cell[field.key] = cell.chartMeta[field.key]
+        const schema = ADAPT_COMPONENTS[cell.chart]
+        for (const key of getOwnFieldKeys(schema)) {
+          if (cell[key] === undefined && key in (cell.chartMeta ?? {})) {
+            cell[key] = cell.chartMeta[key]
           }
         }
       }
