@@ -91,5 +91,11 @@ export function createResourceQueries<T extends { id: string }>(
         })
     }
 
-    return { KEYS, useList, useById, useCreate, useUpdate, useRemove }
+    // Plain GET, not a Pinia Colada query: callers need this as a one-off
+    // check before a create, not as cached/reactive state.
+    function checkExists(name: string): Promise<boolean> {
+        return api.get<{ exists: boolean }>(`/${resource}/exists`, { params: { name } }).then((r) => r.data.exists)
+    }
+
+    return { KEYS, useList, useById, useCreate, useUpdate, useRemove, checkExists }
 }

@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import { ADAPT_COMPONENTS } from '../components/AdaptComponents/index.js'
+import { getOwnFieldKeys, fieldSchema, defaultForFieldSchema } from '../components/AdaptComponents/schemaUtils'
 
 export const CHART_TYPES = [
   { v: 'BarChart',         l: 'Bar Chart' },
@@ -12,8 +13,6 @@ export const CHART_TYPES = [
   { v: 'TreemapChart',     l: 'Treemap' },
   { v: 'DataTable',        l: 'Data Table' },
 ]
-
-const FIELD_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
 
 export function useGridBuilder(activeTabKey, mainPanel, { setValue }) {
   // ── Grid rows ─────────────────────────────────────────────────────────────
@@ -130,11 +129,11 @@ export function useGridBuilder(activeTabKey, mainPanel, { setValue }) {
         const id         = cellId(ri, ci)
         const prev       = existingCells.find(c => c.cell === id)
         const cellConfig = { ...(prev ?? {}), cell: id, component: cell.chart }
-        const adaptDef   = ADAPT_COMPONENTS[cell.chart]
-        if (adaptDef) {
-          for (const field of adaptDef.fields ?? []) {
-            if (!(field.key in cellConfig)) {
-              cellConfig[field.key] = field.default !== undefined ? field.default : (FIELD_DEFAULTS[field.type] ?? '')
+        const adaptSchema = ADAPT_COMPONENTS[cell.chart]
+        if (adaptSchema) {
+          for (const key of getOwnFieldKeys(adaptSchema)) {
+            if (!(key in cellConfig)) {
+              cellConfig[key] = defaultForFieldSchema(fieldSchema(adaptSchema, key))
             }
           }
         }

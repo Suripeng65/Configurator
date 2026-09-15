@@ -3,11 +3,12 @@ import { inject, ref, computed, watch } from 'vue'
 import useEditorWorkflow from "@src/composables/EditorWorkflow";
 import { uiTemplatesQueries } from '@src/queries'
 import { ADAPT_COMPONENTS } from '@src/components/AdaptComponents/index';
-import { useLayoutEditor } from '@src/composables/useLayoutEditor.js'
+import { getOwnFieldKeys, fieldSchema } from '@src/components/AdaptComponents/schemaUtils'
+import { useLayoutEditor } from '@src/composables/useLayoutEditor'
 import { useGridEditor } from '@src/composables/useGridEditor'
 import {findComponents} from "@src/utils/datasources.util.ts";
 import ComponentNode from '@src/components/user/ComponentNode.vue'
-import { useTabManager }   from '@src/composables/useTabManager.js'
+import { useTabManager }   from '@src/composables/useTabManager'
 
 const meta  = inject<any>('meta')
 const { setValue, addChild, deleteNode } = useLayoutEditor(meta)
@@ -33,11 +34,14 @@ const {
 
 const adaptLibrary = computed(()=>{
   return Object.entries(ADAPT_COMPONENTS).reduce((acc, curr)=>{
-    const [name, def] = curr
+    const [name, schema] = curr
     acc[name] = {
-      id:def?.id ?? null,
-      label: def.label,
-      fields: def.fields.map(field => ({ ...field }))
+      id: schema?.id ?? null,
+      label: schema.title,
+      fields: getOwnFieldKeys(schema).map(key => {
+        const fs = fieldSchema(schema, key)
+        return { key, type: fs?.type ?? 'string', default: fs?.default }
+      })
     }
     return acc
   },{})

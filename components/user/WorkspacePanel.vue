@@ -64,7 +64,7 @@
 
 <script setup>
 import { ref, computed, inject } from 'vue'
-import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
+import { useLayoutEditor } from '../../composables/useLayoutEditor'
 import WorkspaceSection from './WorkspaceSection.vue'
 
 const LEAVES = ['FlexDropdown', 'ModalSelector', 'ValidationMessage', 'StratificationToggle', 'StratificationDropdown']

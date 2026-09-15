@@ -134,7 +134,7 @@
 <script setup>
 import { ref, computed, inject } from 'vue'
 import { BForm, BFormGroup, BFormInput, BButton } from 'bootstrap-vue-next'
-import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
+import { useLayoutEditor } from '../../composables/useLayoutEditor'
 
 const props = defineProps({
   tabKey: { type: String, default: null },

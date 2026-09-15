@@ -24,7 +24,7 @@
             @click="selectComponent(name)"
           >
             <span class="comp-name">{{ name }}<span v-if="selected === name && isDirty" class="dirty-dot" title="Unsaved changes">●</span></span>
-            <span class="comp-sub">{{ ADAPT_COMPONENTS[name].label }} · {{ usageCountFor(name) }} use{{ usageCountFor(name) === 1 ? '' : 's' }}</span>
+            <span class="comp-sub">{{ ADAPT_COMPONENTS[name].title }} · {{ usageCountFor(name) }} use{{ usageCountFor(name) === 1 ? '' : 's' }}</span>
           </BListGroupItem>
         </BListGroup>
       </aside>
@@ -131,8 +131,9 @@
 <script setup>
 import { ref, computed, inject } from 'vue'
 import { BFormInput, BFormSelect, BFormCheckbox, BButton, BFormGroup, BListGroup, BListGroupItem, BTable, BBadge } from 'bootstrap-vue-next'
-import { ADAPT_COMPONENTS } from '../AdaptComponents/index.js'
-import { useLayoutEditor, getAtPath } from '../../composables/useLayoutEditor.js'
+import { ADAPT_COMPONENTS } from '../AdaptComponents/index'
+import { getOwnFieldKeys, fieldSchema, walkLayoutNodes } from '../AdaptComponents/schemaUtils'
+import { useLayoutEditor, getAtPath } from '../../composables/useLayoutEditor'
 
 const meta = inject('meta')
 const { setValue, deleteNode } = useLayoutEditor(meta)
@@ -154,18 +155,11 @@ const TYPE_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object
 // saveComponent() looks paths up here instead of re-walking the tree.
 const usageIndex = computed(() => {
   const index = {}
-  function walk(node, path) {
-    if (Array.isArray(node)) { node.forEach((child, i) => walk(child, [...path, i])); return }
-    if (!node || typeof node !== 'object') return
-    if (typeof node.component === 'string') {
+  if (meta?.value?.layout?.viz) {
+    walkLayoutNodes(meta.value.layout.viz, (node, path) => {
       (index[node.component] ??= []).push(path)
-    }
-    for (const key of Object.keys(node)) {
-      const value = node[key]
-      if (value && typeof value === 'object') walk(value, [...path, key])
-    }
+    }, ['viz'])
   }
-  if (meta?.value?.layout?.viz) walk(meta.value.layout.viz, ['viz'])
   return index
 })
 
@@ -181,7 +175,16 @@ const draft         = ref({ fields: [] })
 const savedSnapshot = ref([])
 
 function loadDraft(name) {
-  const fields = (ADAPT_COMPONENTS[name]?.fields ?? []).map(f => ({ ...f }))
+  const schema = ADAPT_COMPONENTS[name]
+  const fields = getOwnFieldKeys(schema).map(key => {
+    const fs = fieldSchema(schema, key) ?? {}
+    // 'datasource' isn't a JSON Schema type — it's carried as a string field
+    // tagged with the x-widget vendor extension; surface it as its own type
+    // in this table exactly like before (drives the dropdown-of-datasource-names
+    // hint and the '/' default).
+    const type = fs.type === 'string' && fs['x-widget'] === 'datasource' ? 'datasource' : (fs.type ?? 'string')
+    return { key, type, default: fs.default }
+  })
   savedSnapshot.value = fields
   draft.value = { fields: fields.map(f => ({ ...f, _originalKey: f.key })) }
 }

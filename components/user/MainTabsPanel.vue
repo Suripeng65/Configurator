@@ -75,7 +75,7 @@
 
 <script setup>
 import { ref, computed, inject } from 'vue'
-import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
+import { useLayoutEditor } from '../../composables/useLayoutEditor'
 import TabForm from './TabForm.vue'
 
 const MAIN_PANEL_META_KEYS = new Set(['tab-array', 'tabs', 'defaultTab', 'datasources', 'component'])

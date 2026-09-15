@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import {ref, Ref} from 'vue'
+import {ref, computed, Ref} from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { BTable, BButton, BModal, BFormInput, BAlert } from 'bootstrap-vue-next'
 import Banner from '@src/components/Banner.vue'
 import HistoryFormGroup from "@src/components/HistoryFormGroup.vue";
+import ExportJsonModal from '@src/components/ExportJsonModal.vue'
+import ConfirmOverwriteModal from '@src/components/ConfirmOverwriteModal.vue'
 import useEditorWorkflow from "@src/composables/EditorWorkflow.ts";
+import {validateVariables} from "@src/validation/index";
 import {variablesQueries} from "@src/queries";
 import {cloneDeep} from "lodash";
 
 const showCreate = ref(false)
+const showExport = ref(false)
 
 const router = useRouter()
 const route  = useRoute()
@@ -21,6 +25,8 @@ const meta: Ref<Record<string, any>>       = ref({
   columns: []
 })
 
+const exportJson = computed(() => JSON.stringify(meta.value, null, 2))
+
 const {
   data,
   loading,
@@ -30,10 +36,16 @@ const {
   update,
   updating,
   remove,
-} = useEditorWorkflow(variablesQueries, meta)
+  violations,
+  showOverwriteConfirm,
+  pendingOverwriteName,
+  confirmOverwrite,
+  cancelOverwrite,
+} = useEditorWorkflow(variablesQueries, meta, validateVariables)
 
 function resetModel() {
   meta.value = cloneDeep(data.value)
+  violations.value = []
   if (!meta.value.columns) meta.value.columns = []
   meta.value.columns.forEach(column => {
     delete column.id
@@ -44,7 +56,7 @@ function markDirty(i) {
   // Track dirty rows if needed
 }
 
-const newCol = ref({ columnName: '', columnDisplayName: '', format: '', visibility: true })
+const newCol = ref({ columnName: '', columnDisplayName: '', role: '', type: '', format: '', visibility: true })
 
 const fields = [
   { key: 'columnName',        label: 'Column Name',         thStyle: 'min-width:150px' },
@@ -66,7 +78,7 @@ async function submitCreate() {
   if (!c.columnName.trim()) return
   meta.value.columns.push(cloneDeep(c))
   showCreate.value = false
-  newCol.value = { columnName: '', columnDisplayName: '', format: '', visibility: true }
+  newCol.value = { columnName: '', columnDisplayName: '', role: '', type: '', format: '', visibility: true }
 }
 </script>
 <template>
@@ -74,14 +86,37 @@ async function submitCreate() {
     <Banner>
       <template #buttons>
         <BButtonGroup>
+          <BButton variant="outline-primary" size="sm" @click="showExport = true">Export</BButton>
           <BButton variant="warning" size="sm" @click="resetModel">Reset</BButton>
-          <BButton variant="primary" size="sm" @click="update(meta)">Save</BButton>
+          <BButton v-if="!id" variant="primary" size="sm" @click="create(meta)">Save</BButton>
+          <BButton v-if="id" variant="primary" size="sm" @click="update(meta)">Save</BButton>
           <BButton v-if="id" variant="danger" size="sm" @click="remove(id)">Delete</BButton>
         </BButtonGroup>
       </template>
     </Banner>
 
+    <ExportJsonModal
+      v-model="showExport"
+      title="Export Variables"
+      body-text="Copy the Variables JSON below."
+      :json="exportJson"
+    />
+
+    <ConfirmOverwriteModal
+      v-model="showOverwriteConfirm"
+      :name="pendingOverwriteName"
+      entity-label="variables list"
+      @confirm="confirmOverwrite"
+      @cancel="cancelOverwrite"
+    />
+
     <BAlert v-model="error" variant="danger" dismissible>{{ error }}</BAlert>
+    <BAlert :model-value="violations.length > 0" variant="danger">
+      <strong>Fix the following before saving:</strong>
+      <ul class="mb-0">
+        <li v-for="v in violations" :key="v.rule">{{ v.message }}</li>
+      </ul>
+    </BAlert>
     <div v-if="loading" class="state-msg">Loading…</div>
     <div v-else-if="creating" class="state-msg error-msg">Creating…</div>
     <div v-else-if="updating" class="state-msg error-msg">Updating…</div>
@@ -113,6 +148,12 @@ async function submitCreate() {
             </template>
             <template #cell(displayName)="{ item, index }">
               <input v-model="item.displayName" class="cell-input" @input="markDirty(index)" />
+            </template>
+            <template #cell(role)="{ item, index }">
+              <input v-model="item.role" class="cell-input" @input="markDirty(index)" />
+            </template>
+            <template #cell(type)="{ item, index }">
+              <input v-model="item.type" class="cell-input" @input="markDirty(index)" />
             </template>
             <template #cell(format)="{ item, index }">
               <input v-model="item.format" class="cell-input" @input="markDirty(index)" />
@@ -149,6 +190,14 @@ async function submitCreate() {
         <div class="form-row">
           <label>Display Name</label>
           <BFormInput v-model="newCol.columnDisplayName" placeholder="e.g. Patient Age" />
+        </div>
+        <div class="form-row">
+          <label>Role</label>
+          <BFormInput v-model="newCol.role" placeholder="e.g. dimension, metric" />
+        </div>
+        <div class="form-row">
+          <label>Type</label>
+          <BFormInput v-model="newCol.type" placeholder="e.g. string, number, date" />
         </div>
         <div class="form-row">
           <label>Format</label>

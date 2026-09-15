@@ -38,7 +38,7 @@
             <input type="checkbox" :checked="item.collapsedByDefault" @change="setField('collapsedByDefault', $event.target.checked)" />
             collapsed by default
           </label>
-          <button class="header-delete-btn" title="Remove section" @click.stop="deleteNode">✕</button>
+          <button class="header-delete-btn" title="Remove section" @click.stop="removeNode">✕</button>
         </div>
       </div>
 
@@ -108,7 +108,7 @@
     <!-- === LEAF === -->
     <template v-else>
       <div class="leaf-row" :class="`leaf-${item.component}`">
-        <button class="leaf-delete-btn" title="Remove" @click.stop="deleteNode">✕</button>
+        <button class="leaf-delete-btn" title="Remove" @click.stop="removeNode">✕</button>
 
         <template v-if="item.component === 'ValidationMessage'">
           <span class="leaf-badge validation">⚠ Validation</span>
@@ -220,7 +220,7 @@
 
 <script setup>
 import { ref, computed, nextTick, defineComponent, h, inject } from 'vue'
-import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
+import { useLayoutEditor } from '../../composables/useLayoutEditor'
 
 // ── Known keys per component type (everything else → extra fields) ────────────
 const KNOWN_KEYS_BY_TYPE = {
@@ -383,7 +383,7 @@ const existingInstances = computed(() => {
 })
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function deleteNode() {
+function removeNode() {
   const label = sectionLabel.value || props.item.component || 'this item'
   const hasChildren = isContainer.value && (props.item.contents ?? []).length > 0
   const msg = hasChildren

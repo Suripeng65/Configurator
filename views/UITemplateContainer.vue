@@ -3,6 +3,7 @@ import {useRoute} from "vue-router";
 import {ref, Ref, watch} from "vue";
 import {cloneDeep} from "lodash";
 import useEditorWorkflow from "@src/composables/EditorWorkflow.ts";
+import {validateUiTemplate} from "@src/validation/index";
 import {uiTemplatesQueries} from "@src/queries";
 import Banner from "@src/components/Banner.vue";
 import EditorButtons from "@src/components/EditorButtons.vue";
@@ -19,7 +20,7 @@ const meta: Ref<Record<string, any>> = ref({
   layout: {}
 })
 
-useEditorWorkflow(uiTemplatesQueries, meta)
+useEditorWorkflow(uiTemplatesQueries, meta, validateUiTemplate)
 
 if (sourceId) {
   const { data: sourceData } = uiTemplatesQueries.useById(sourceId)

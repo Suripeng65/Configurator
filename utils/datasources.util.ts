@@ -1,5 +1,19 @@
 import {get, set} from "lodash";
 
+// Linked-list path node used by findComponents' iterative walk — O(1) to
+// push, materialized into a plain array only when needed (see materializePath).
+type PathNode = { key: string | number, parent: PathNode } | null
+
+function materializePath(node: PathNode): string[] {
+    const parts: string[] = []
+    let cur = node
+    while (cur) {
+        parts.push(String(cur.key))
+        cur = cur.parent
+    }
+    return parts.reverse()
+}
+
 export function getScope(meta, path = []) {
     if (path[0] === 'viz' && path[1] === 'main-panel' && path[2] === 'datasources') {
         return "Global"
@@ -75,29 +89,43 @@ export function findComponents(layout: object, componentType: any, path: string[
     fullPathArray: string[]
     matchedObject: Record<string, any>
 }] {
-    // Return if the current target is not an object/array or is null
-    if (typeof layout !== 'object' || layout === null) {
-        return results;
-    }
+    // Iterative (explicit stack, not recursion): a deeply nested layout —
+    // exactly the kind of thing the "too large" meta-size check is meant to
+    // catch — can blow the call stack in a recursive walk before that check
+    // ever gets a chance to run. This has no such depth limit.
+    //
+    // The path is tracked as a linked list, not an array rebuilt (via spread)
+    // at every node — that would make a single deep chain cost O(depth^2)
+    // instead of O(depth). The array is only materialized on an actual match,
+    // which is rare relative to the total number of nodes visited.
+    let rootPathNode: PathNode = null
+    for (const key of path) rootPathNode = { key, parent: rootPathNode }
 
-    // Iterate through all properties of the object/array
-    for (const key: string | number in layout) {
-        if (layout.hasOwnProperty(key)) {
-            const currentPath: string[] = [...path, key];
-            const currentValue: any = layout[key];
+    // Tracks visited nodes so a circular reference gets skipped instead of
+    // being pushed onto the stack forever (unbounded memory growth, not a
+    // stack overflow, but just as much a hang/crash).
+    const visited = new Set<any>()
+    const stack: Array<{ node: any, pathNode: PathNode }> = [{ node: layout, pathNode: rootPathNode }]
 
-            // Check if this key/value pair matches the target
-            if (key === "component" && currentValue === componentType) {
-                results.push({
-                    path: path.join('.'), // Creates a dot-notation path string
-                    fullPathArray: path,
-                    matchedObject: layout
-                });
-            }
+    while (stack.length) {
+        const { node, pathNode } = stack.pop()
+        if (typeof node !== 'object' || node === null) continue
+        if (visited.has(node)) continue
+        visited.add(node)
 
-            // Recursively search nested objects or arrays
-            if (typeof currentValue === 'object' && currentValue !== null) {
-                findComponents(currentValue, componentType, currentPath, results);
+        if (!Array.isArray(node) && node.component === componentType) {
+            const fullPathArray = materializePath(pathNode)
+            results.push({
+                path: fullPathArray.join('.'), // Creates a dot-notation path string
+                fullPathArray,
+                matchedObject: node
+            })
+        }
+
+        for (const key of Object.keys(node)) {
+            const value = node[key]
+            if (typeof value === 'object' && value !== null) {
+                stack.push({ node: value, pathNode: { key, parent: pathNode } })
             }
         }
     }

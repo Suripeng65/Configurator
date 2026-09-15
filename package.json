@@ -10,12 +10,17 @@
     "lint": "eslint . --ext .vue,.js"
   },
   "dependencies": {
+    "@jsonforms/core": "^3.8.0",
+    "@jsonforms/vue": "^3.8.0",
+    "@jsonforms/vue-vanilla": "^3.8.0",
+    "ajv": "^8.20.0",
     "axios": "^1.6.0",
     "bootstrap": "^5.3.8",
     "bootstrap-vue-next": "^0.45.8",
     "pinia": "^2.1.7",
     "vue": "^3.4.0",
-    "vue-router": "^4.2.0"
+    "vue-router": "^4.2.0",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",

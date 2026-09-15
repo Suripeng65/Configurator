@@ -26,6 +26,17 @@ const isUITemplateRoute = computed(() =>
   route.path.startsWith('/uitemplate')
 )
 
+// True on any of the Details/Layout/Datasource/Adapt Library leaf routes,
+// for both the Edit flow (/uitemplate/:id/...) and the Create flow
+// (/uitemplate/create/...) — editorSection is only set on those four routes.
+const showUITemplateSubNav = computed(() => !!route.meta.editorSection)
+
+// Edit uses the record's id; Create has no id yet, so it uses the literal
+// "create" path segment instead.
+const uiTemplateBasePath = computed(() =>
+  route.params.id ? `/uitemplate/${route.params.id}` : '/uitemplate/create'
+)
+
 function copyJson() {
   if (!template.value) return
   const json = JSON.stringify(template.value.layout, null, 2)
@@ -115,12 +126,12 @@ onMounted(()=>{
         <RouterLink to="/uitemplate" class="nav-item" active-class="nav-active"
           :class="{ 'nav-active': isUITemplateRoute }">UI Templates</RouterLink>
 
-        <!-- Sub-nav shown when inside a specific UI template -->
-        <template v-if="isUITemplateRoute && route.params.id">
-          <RouterLink :to="`/uitemplate/${route.params.id}/details`"     class="nav-sub" active-class="nav-sub-active">- Details</RouterLink>
-          <RouterLink :to="`/uitemplate/${route.params.id}/layout`"      class="nav-sub" active-class="nav-sub-active">- Layout</RouterLink>
-          <RouterLink :to="`/uitemplate/${route.params.id}/datasource`" class="nav-sub" active-class="nav-sub-active">- Datasources</RouterLink>
-          <RouterLink :to="`/uitemplate/${route.params.id}/adaptlibrary`" class="nav-sub" active-class="nav-sub-active">- Adapt Library</RouterLink>
+        <!-- Sub-nav shown when inside a specific UI template (Edit or Create) -->
+        <template v-if="showUITemplateSubNav">
+          <RouterLink :to="`${uiTemplateBasePath}/details`"     class="nav-sub" active-class="nav-sub-active">- Details</RouterLink>
+          <RouterLink :to="`${uiTemplateBasePath}/layout`"      class="nav-sub" active-class="nav-sub-active">- Layout</RouterLink>
+          <RouterLink :to="`${uiTemplateBasePath}/datasource`" class="nav-sub" active-class="nav-sub-active">- Datasources</RouterLink>
+          <RouterLink :to="`${uiTemplateBasePath}/adaptlibrary`" class="nav-sub" active-class="nav-sub-active">- Adapt Library</RouterLink>
 <!--          <RouterLink :to="`/uitemplates/${route.params.id}/apis`"        class="nav-sub" active-class="nav-sub-active">- APIs</RouterLink>-->
 <!--          <RouterLink :to="`/uitemplates/${route.params.id}/instances`"   class="nav-sub" active-class="nav-sub-active">Instances</RouterLink>-->
         </template>
@@ -302,6 +313,7 @@ onMounted(()=>{
 /* ── Main content ── */
 .main-content {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;

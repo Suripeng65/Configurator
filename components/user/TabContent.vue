@@ -113,7 +113,7 @@
 
 <script setup>
 import { ref, computed, inject } from 'vue'
-import { useLayoutEditor } from '../../composables/useLayoutEditor.js'
+import { useLayoutEditor } from '../../composables/useLayoutEditor'
 
 const props = defineProps({
   tabKey: { type: String, required: true },
