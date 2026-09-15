@@ -1,16 +1,18 @@
 
 <script setup>
 import { ref, computed, nextTick, inject } from 'vue'
+import { JsonForms } from '@jsonforms/vue'
 import { BButton, BFormInput, BFormSelect, BFormCheckbox, BFormTextarea } from 'bootstrap-vue-next'
 import { useLayoutEditor } from '../../composables/useLayoutEditor'
 import { ADAPT_COMPONENTS } from '../AdaptComponents/index.js'
+import { getOwnFieldKeys, fieldSchema, buildNodeFromSchema, groupedComponents } from '../AdaptComponents/schemaUtils'
+import { renderers } from './jsonforms/renderers'
 import {  isFlatArray, isMultiline } from '@src/utils/grid-row-parser'
 
 const CODE_KEYS = new Set(['dim', 'datasourceName', 'ruleName', 'id', 'cell'])  // render with code style
 const NAME_KEYS = ['displayName', 'groupName', 'label', 'title']  //render with text style
 const SKIP_KEYS = new Set(['component', 'contents']) //not show in the form
 
-const FIELD_TYPE_DEFAULTS = { string: '', number: 0, boolean: false, array: [], object: {}, datasource: '/' }
 const GROUP_LABELS = { container: 'Containers', filter: 'Filters', other: 'Other', chart: 'Charts' }
 const GROUP_ORDER  = ['container', 'filter', 'other', 'chart']
 
@@ -35,7 +37,34 @@ const fieldKeys   = computed(() =>
   Object.keys(props.item).filter(k => !SKIP_KEYS.has(k) && k !== nameKey.value)
 )
 
-// Field edits 
+// ── JSONForms wiring for schema-known components ─────────────────────────────
+// Try the AdaptComponent schema for this node's `component` first; fall back
+// to the plain typeof-based cascade below when there's no schema match.
+const componentDef = computed(() => ADAPT_COMPONENTS[props.item.component] ?? null)
+
+// Self-contained schema scoped to this node's own editable properties (no
+// $ref, so JSONForms' own internal ajv can validate it directly).
+const ownSchema = computed(() => {
+  const schema = componentDef.value
+  if (!schema) return null
+  const keys = getOwnFieldKeys(schema)
+  return {
+    type: 'object',
+    properties: Object.fromEntries(keys.map(k => [k, fieldSchema(schema, k)])),
+    required: (schema.required ?? []).filter(k => keys.includes(k)),
+  }
+})
+const formData = computed(() => {
+  const keys = getOwnFieldKeys(componentDef.value)
+  return Object.fromEntries(keys.map(k => [k, props.item[k]]))
+})
+function onFormChange({ data }) {
+  for (const key of getOwnFieldKeys(componentDef.value)) {
+    if (data[key] !== props.item[key]) setField(key, data[key])
+  }
+}
+
+// Field edits
 function setField(key, value)   { 
   setValue([...props.path, key], value) 
 }
@@ -108,27 +137,15 @@ const newChildType = ref('')
 const newChildName = ref('')
 
 const componentsByGroup = computed(() => {
-  const groups = {}
-  for (const [key, def] of Object.entries(ADAPT_COMPONENTS)) {
-    const g = def.group || 'other'
-    if (!groups[g]) groups[g] = []
-    groups[g].push({ key, label: def.label || key })
-  }
+  const groups = groupedComponents(ADAPT_COMPONENTS)
   return GROUP_ORDER.filter(g => groups[g]).map(g => ({ group: g, items: groups[g] }))
 })
 
 const selectedChildDef = computed(() => ADAPT_COMPONENTS[newChildType.value] ?? null)
+const selectedChildNameKey = computed(() => selectedChildDef.value?.['x-catalog']?.nameKey ?? null)
 
 function buildFromDef(type, name) {
-  const def = ADAPT_COMPONENTS[type]
-  if (!def) return { component: type }
-  const config = { component: type }
-  for (const field of def.fields ?? []) {
-    config[field.key] = field.default !== undefined ? field.default : (FIELD_TYPE_DEFAULTS[field.type] ?? '')
-  }
-  if (name && def.nameKey) config[def.nameKey] = name
-  if (def.container) config.contents = []
-  return config
+  return buildNodeFromSchema(type, ADAPT_COMPONENTS[type], name)
 }
 
 function commitAddChild() {
@@ -194,103 +211,107 @@ function cancelAddChild() {
     <!-- Body -->
     <div v-if="expanded" class="cn-body">
 
-      <!-- Key/value fields -->
-      <div class="cn-fields">
-        <div
-          v-for="key in fieldKeys"
-          :key="key"
-          class="cn-frow"
-          :class="{ 'cn-frow--top': isMultiline(item[key]) }"
-        >
-          <span class="cn-flabel" :title="key">{{ key }}</span>
-
-          <!-- boolean -->
-          <BFormCheckbox
-            v-if="typeof item[key] === 'boolean'"
-            class="cn-bool mb-0"
-            :model-value="item[key]"
-            @update:model-value="setField(key, $event)"
-          >{{ item[key] ? 'true' : 'false' }}</BFormCheckbox>
-
-          <!-- number -->
-          <BFormInput
-            v-else-if="typeof item[key] === 'number'"
-            size="sm"
-            type="number"
-            :model-value="item[key]"
-            @update:model-value="setField(key, Number($event))"
+      <!-- Key/value fields: schema-known components render via JSONForms;
+           anything without a matching schema keeps the old best-effort editor. -->
+      <template v-if="componentDef">
+        <div class="cn-jsonforms">
+          <json-forms
+            :schema="ownSchema"
+            :data="formData"
+            :renderers="renderers"
+            @change="onFormChange"
           />
+        </div>
+      </template>
+      <template v-else>
+        <div class="cn-fields">
+          <div
+            v-for="key in fieldKeys"
+            :key="key"
+            class="cn-frow"
+            :class="{ 'cn-frow--top': isMultiline(item[key]) }"
+          >
+            <span class="cn-flabel" :title="key">{{ key }}</span>
 
-          <!-- flat array (strings / numbers) -->
-          <BFormTextarea
-            v-else-if="isFlatArray(item[key])"
-            size="sm"
-            :model-value="item[key].join('\n')"
-            rows="3"
-            @update:model-value="setField(key, $event.split('\n').map(s => s.trim()).filter(Boolean))"
-          />
+            <!-- boolean -->
+            <BFormCheckbox
+              v-if="typeof item[key] === 'boolean'"
+              class="cn-bool mb-0"
+              :model-value="item[key]"
+              @update:model-value="setField(key, $event)"
+            >{{ item[key] ? 'true' : 'false' }}</BFormCheckbox>
 
-          <BFormTextarea
-              v-else-if="typeof item[key] === 'json'"
+            <!-- number -->
+            <BFormInput
+              v-else-if="typeof item[key] === 'number'"
+              size="sm"
+              type="number"
+              :model-value="item[key]"
+              @update:model-value="setField(key, Number($event))"
+            />
+
+            <!-- flat array (strings / numbers) -->
+            <BFormTextarea
+              v-else-if="isFlatArray(item[key])"
+              size="sm"
+              :model-value="item[key].join('\n')"
+              rows="3"
+              @update:model-value="setField(key, $event.split('\n').map(s => s.trim()).filter(Boolean))"
+            />
+
+            <!-- object / array-of-objects → JSON -->
+            <BFormTextarea
+              v-else-if="item[key] !== null && typeof item[key] === 'object'"
               size="sm"
               class="cn-ftextarea--json"
               :model-value="JSON.stringify(item[key], null, 2)"
               rows="3"
               @update:model-value="setFieldJson(key, $event)"
-          />
+            />
 
-          <!-- object / array-of-objects → JSON -->
-          <BFormTextarea
-            v-else-if="item[key] !== null && typeof item[key] === 'object'"
-            size="sm"
-            class="cn-ftextarea--json"
-            :model-value="JSON.stringify(item[key], null, 2)"
-            rows="3"
-            @update:model-value="setFieldJson(key, $event)"
-          />
+            <!-- string (default) -->
+            <BFormInput
+              v-else
+              size="sm"
+              :class="{ 'font-monospace': CODE_KEYS.has(key) }"
+              :model-value="item[key] ?? ''"
+              @update:model-value="setField(key, $event)"
+            />
 
-          <!-- string (default) -->
-          <BFormInput
-            v-else
-            size="sm"
-            :class="{ 'font-monospace': CODE_KEYS.has(key) }"
-            :model-value="item[key] ?? ''"
-            @update:model-value="setField(key, $event)"
-          />
-
-          <BButton variant="link" size="sm" class="cn-fremove p-0" title="Remove field" @click="removeField(key)">×</BButton>
+            <BButton variant="link" size="sm" class="cn-fremove p-0" title="Remove field" @click="removeField(key)">×</BButton>
+          </div>
         </div>
-      </div>
 
-      <!-- Add field form -->
-      <div v-if="showAddField" class="cn-add-row">
-        <BFormInput
-          v-model="newFieldKey"
-          size="sm"
-          placeholder="key"
-          class="font-monospace cn-af-key"
-          @keyup.enter="commitAddField"
-          @keyup.escape="cancelAddField"
-        />
-        <span class="cn-af-sep">:</span>
-        <BFormInput
-          v-model="newFieldValue"
-          size="sm"
-          placeholder="value"
-          class="cn-af-flex"
-          @keyup.enter="commitAddField"
-          @keyup.escape="cancelAddField"
-        />
-        <BFormSelect v-model="newFieldType" size="sm" class="cn-af-type">
-          <option value="string">string</option>
-          <option value="number">number</option>
-          <option value="boolean">bool</option>
-          <option value="array">string[]</option>
-        </BFormSelect>
-        <BButton variant="primary" size="sm" @click="commitAddField">Add</BButton>
-        <BButton variant="link" size="sm" class="text-secondary p-0" @click="cancelAddField">✕</BButton>
-      </div>
-      <BButton v-else variant="outline-secondary" size="sm" class="cn-dashed-btn" @click="showAddField = true">+ field</BButton>
+        <!-- Add field form -->
+        <div v-if="showAddField" class="cn-add-row">
+          <BFormInput
+            v-model="newFieldKey"
+            size="sm"
+            placeholder="key"
+            class="font-monospace cn-af-key"
+            @keyup.enter="commitAddField"
+            @keyup.escape="cancelAddField"
+          />
+          <span class="cn-af-sep">:</span>
+          <BFormInput
+            v-model="newFieldValue"
+            size="sm"
+            placeholder="value"
+            class="cn-af-flex"
+            @keyup.enter="commitAddField"
+            @keyup.escape="cancelAddField"
+          />
+          <BFormSelect v-model="newFieldType" size="sm" class="cn-af-type">
+            <option value="string">string</option>
+            <option value="number">number</option>
+            <option value="boolean">bool</option>
+            <option value="array">string[]</option>
+          </BFormSelect>
+          <BButton variant="primary" size="sm" @click="commitAddField">Add</BButton>
+          <BButton variant="link" size="sm" class="text-secondary p-0" @click="cancelAddField">✕</BButton>
+        </div>
+        <BButton v-else variant="outline-secondary" size="sm" class="cn-dashed-btn" @click="showAddField = true">+ field</BButton>
+      </template>
 
       <!-- Recursive children -->
       <div class="cn-children">
@@ -310,10 +331,10 @@ function cancelAddChild() {
             </optgroup>
           </BFormSelect>
           <BFormInput
-            v-if="selectedChildDef?.nameKey"
+            v-if="selectedChildNameKey"
             v-model="newChildName"
             size="sm"
-            :placeholder="selectedChildDef.nameKey"
+            :placeholder="selectedChildNameKey"
             class="cn-af-flex"
             @keyup.enter="commitAddChild"
             @keyup.escape="cancelAddChild"
@@ -425,6 +446,37 @@ function cancelAddChild() {
 
 /* ── JSON textarea ── */
 .cn-ftextarea--json { background: #1e1e2e !important; color: #cdd6f4 !important; font-size: 10px; font-family: monospace; }
+
+/* ── JSONForms field panel (vue-vanilla default renderers, lightly aligned
+   with the rest of this component's cn-* styling) ── */
+.cn-jsonforms { font-size: 12px; }
+.cn-jsonforms:deep(.vertical-layout-item) { margin-bottom: 6px; }
+.cn-jsonforms:deep(.control) { display: flex; flex-direction: column; gap: 2px; }
+.cn-jsonforms:deep(.label) {
+  font-size: 11px;
+  color: #6b7280;
+  font-family: monospace;
+}
+.cn-jsonforms:deep(.input),
+.cn-jsonforms:deep(.select),
+.cn-jsonforms:deep(.text-area) {
+  font-size: 12px;
+  padding: 4px 8px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-family: inherit;
+}
+.cn-jsonforms:deep(.error) { font-size: 11px; color: #dc2626; }
+.cn-jsonforms:deep(.array-list-add) {
+  font-size: 11px;
+  border: 1px dashed #9ca3af;
+  background: none;
+  border-radius: 4px;
+  padding: 3px 8px;
+  cursor: pointer;
+  color: #6b7280;
+}
+.cn-jsonforms:deep(.array-list-add:hover) { border-color: #6366f1; color: #6366f1; }
 
 /* ── Add rows ── */
 .cn-add-row {

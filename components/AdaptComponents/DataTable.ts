@@ -1,41 +1,26 @@
-export default{
-    id:'DataTable',
-    label: 'Data Table',
-    fields:[
-        {
-        key: 'status-bar',
-        label: 'Status Bar Visibility',
-        type:'boolean', 
-        default: false
-      },
-      { 
-        key: 'max-threshold',
-        label: 'Max Threshold Of Data Items',
-        type: 'number',
-        default: 50000
-      },
-      {key: 'toolbar',
-        type: 'boolean',
-        label: 'Show Toolbar',
-        default: false
-      },
+import type { AdaptComponentSchema } from './types'
 
-{key: 'enable-metric-selection',
-    type: 'boolean',
-        label: 'Enable Metric Selection (eyeball)',
-        default: false
-},
-{key: 'quick-filter',
-    type: 'boolean',
-        label: 'Show quick filter',
-        default: false
-},
-{key: 'pin-bottom',
-    type: 'object',
-    schema: [
-    { key: 'column', type: 'string', label: 'Column', placeholder: 'Column ID' },
-    { key: 'includeInMainTable', type: 'boolean', label: 'Include in Main Table' }
-  ]
+const schema: AdaptComponentSchema = {
+  title: 'Data Table',
+  'x-catalog': { group: 'chart' },
+  type: 'object',
+  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
+  properties: {
+    component: { const: 'DataTable' },
+    'status-bar': { type: 'boolean', title: 'Status Bar Visibility', default: false },
+    'max-threshold': { type: 'number', title: 'Max Threshold Of Data Items', default: 50000 },
+    toolbar: { type: 'boolean', title: 'Show Toolbar', default: false },
+    'enable-metric-selection': { type: 'boolean', title: 'Enable Metric Selection (eyeball)', default: false },
+    'quick-filter': { type: 'boolean', title: 'Show quick filter', default: false },
+    'pin-bottom': {
+      type: 'object',
+      properties: {
+        column: { type: 'string', title: 'Column', description: 'Column ID' },
+        includeInMainTable: { type: 'boolean', title: 'Include in Main Table' },
+      },
+    },
+  },
+  required: ['component'],
 }
-    ]
-}
+
+export default schema

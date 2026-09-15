@@ -1,10 +1,17 @@
-export default {
-  label: 'Accordion Group',
-  group: 'container',
-  nameKey: 'groupName',
-  container: true,
-  fields: [
-    { key: 'groupName',          type: 'string',  default: '' },
-    { key: 'collapsedByDefault', type: 'boolean', default: false },
-  ],
+import type { AdaptComponentSchema } from './types'
+
+const schema: AdaptComponentSchema = {
+  title: 'Accordion Group',
+  'x-catalog': { group: 'container', nameKey: 'groupName' },
+  type: 'object',
+  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
+  properties: {
+    component: { const: 'AccordionGroup' },
+    groupName: { type: 'string', default: '' },
+    collapsedByDefault: { type: 'boolean', default: false },
+    contents: { $ref: '#/$defs/AdaptComponentContents' },
+  },
+  required: ['component'],
 }
+
+export default schema

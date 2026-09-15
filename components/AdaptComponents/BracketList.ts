@@ -1,11 +1,18 @@
-export default {
-  label: 'Bracket List',
-  group: 'filter',
-  nameKey: 'label',
-  container: true,
-  fields: [
-    { key: 'label', type: 'string', default: '' },
-    { key: 'dim',   type: 'string', default: '' },
-    { key: 'values',   type: 'json', default: null },
-  ],
+import type { AdaptComponentSchema } from './types'
+
+const schema: AdaptComponentSchema = {
+  title: 'Bracket List',
+  'x-catalog': { group: 'filter', nameKey: 'label' },
+  type: 'object',
+  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
+  properties: {
+    component: { const: 'BracketList' },
+    label: { type: 'string', default: '' },
+    dim: { type: 'string', default: '' },
+    values: { type: 'array', items: { type: 'array', items: { type: 'string' } }, default: [] },
+    contents: { $ref: '#/$defs/AdaptComponentContents' },
+  },
+  required: ['component'],
 }
+
+export default schema

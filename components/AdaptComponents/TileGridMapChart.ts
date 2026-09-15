@@ -1,27 +1,34 @@
-export default{
-    id:'TileGridMapChart',
-    label: 'Tile Grid Map Chart',
-    fields:[
-        {
-        key: 'generate-report', 
-        type:'checkboxArray', 
-        value: [],
-        options: [
-          { text: 'Jasper', value: 'jasper' },
-          { text: 'CSV', value: 'csv' },
-        ]
-      }, 
-      {key: 'geo-level', type:'string', value:'', placeholder: 'e.g. state / jd'},
-      {
-        key: 'layers-config',
-        type: 'arrayOfObjects',
-        value: [],
-        objectSchema: [
-          { key: 'id', type: 'string', placeholder: 'e.g., abbreviation' },
-          { key: 'name', type: 'string', placeholder: 'e.g., state_name' },
-          { key: 'layer', type: 'string', placeholder: 'e.g., state' },
-          { key: 'component', type: 'string', placeholder: 'e.g., HeatmapLayer' },
-        ]
-      }
-    ]
+import type { AdaptComponentSchema } from './types'
+
+const schema: AdaptComponentSchema = {
+  title: 'Tile Grid Map Chart',
+  'x-catalog': { group: 'chart' },
+  type: 'object',
+  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
+  properties: {
+    component: { const: 'TileGridMapChart' },
+    'generate-report': {
+      type: 'array',
+      items: { oneOf: [{ const: 'jasper', title: 'Jasper' }, { const: 'csv', title: 'CSV' }] },
+      uniqueItems: true,
+      default: [],
+    },
+    'geo-level': { type: 'string', default: '', description: 'e.g. state / jd' },
+    'layers-config': {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'e.g., abbreviation' },
+          name: { type: 'string', description: 'e.g., state_name' },
+          layer: { type: 'string', description: 'e.g., state' },
+          component: { type: 'string', description: 'e.g., HeatmapLayer' },
+        },
+      },
+      default: [],
+    },
+  },
+  required: ['component'],
 }
+
+export default schema

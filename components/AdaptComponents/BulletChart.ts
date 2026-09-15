@@ -1,23 +1,28 @@
-export default{
-    id:'BulletChartList',
-    label: 'Bullet Chart',
-    fields:[
-      {
-        key: 'generate-report', 
-        type:'checkboxArray', 
-        value: [],
-        options: [
-          { text: 'Jasper', value: 'jasper' },
-          { text: 'CSV', value: 'csv' },
-        ]
-      },
-      {
-        key: 'plot-bands',
-        type: 'stringArray',
-        value: [],
-        minItems: 3,
-        maxItems: 5,
-        placeholder: 'Enter column name'
-      }
-    ]
+import type { AdaptComponentSchema } from './types'
+
+const schema: AdaptComponentSchema = {
+  title: 'Bullet Chart',
+  'x-catalog': { group: 'chart' },
+  type: 'object',
+  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
+  properties: {
+    component: { const: 'BulletChartList' },
+    'generate-report': {
+      type: 'array',
+      items: { oneOf: [{ const: 'jasper', title: 'Jasper' }, { const: 'csv', title: 'CSV' }] },
+      uniqueItems: true,
+      default: [],
+    },
+    'plot-bands': {
+      type: 'array',
+      items: { type: 'string' },
+      minItems: 3,
+      maxItems: 5,
+      description: 'Enter column name',
+      default: [],
+    },
+  },
+  required: ['component'],
 }
+
+export default schema

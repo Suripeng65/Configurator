@@ -1,34 +1,36 @@
-export default{
-    id:'HeatMap',
-    label: 'Heatmap',
-    fields:[
-      {
-        key: 'geo-level',
-        type: 'string',
-        value: '',
-        placeholder: 'Column name representing geography level ("state", "county", etc.)'
+import type { AdaptComponentSchema } from './types'
+
+const schema: AdaptComponentSchema = {
+  title: 'Heatmap',
+  'x-catalog': { group: 'chart' },
+  type: 'object',
+  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
+  properties: {
+    component: { const: 'HeatMap' },
+    'geo-level': { type: 'string', default: '', description: 'Column name representing geography level ("state", "county", etc.)' },
+    'generate-report': {
+      type: 'array',
+      items: { oneOf: [{ const: 'jasper', title: 'Jasper' }, { const: 'csv', title: 'CSV' }] },
+      uniqueItems: true,
+      default: [],
+    },
+    'layers-config': {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string', description: 'e.g., abbreviation' },
+          name: { type: 'string', description: 'e.g., state_name' },
+          layer: { type: 'string', description: 'e.g., state' },
+          'max-zoom': { type: 'number', description: 'e.g., 10' },
+          'min-zoom': { type: 'number', description: 'e.g., 1' },
+          component: { type: 'string', description: 'e.g., HeatmapLayer' },
+        },
       },
-      {
-        key: 'generate-report', 
-        type:'checkboxArray', 
-        value: [],
-        options: [
-          { text: 'Jasper', value: 'jasper' },
-          { text: 'CSV', value: 'csv' },
-        ]
-      },
-      {
-        key: 'layers-config',
-        type: 'arrayOfObjects',
-        value: [],
-        objectSchema: [
-          { key: 'id', type: 'string', placeholder: 'e.g., abbreviation' },
-          { key: 'name', type: 'string', placeholder: 'e.g., state_name' },
-          { key: 'layer', type: 'string', placeholder: 'e.g., state' },
-          { key: 'max-zoom', type: 'number', placeholder: 'e.g., 10' },
-          { key: 'min-zoom', type: 'number', placeholder: 'e.g., 1' },
-          { key: 'component', type: 'string', placeholder: 'e.g., HeatmapLayer' },
-        ]
-      }
-    ]
+      default: [],
+    },
+  },
+  required: ['component'],
 }
+
+export default schema

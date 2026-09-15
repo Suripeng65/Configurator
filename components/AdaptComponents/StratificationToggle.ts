@@ -1,8 +1,15 @@
-export default {
-  label: 'Stratification Toggle',
-  group: 'filter',
-  nameKey: 'dim',
-  fields: [
-    { key: 'dim', type: 'string', default: '' },
-  ],
+import type { AdaptComponentSchema } from './types'
+
+const schema: AdaptComponentSchema = {
+  title: 'Stratification Toggle',
+  'x-catalog': { group: 'filter', nameKey: 'dim' },
+  type: 'object',
+  allOf: [{ $ref: '#/$defs/AdaptComponent' }],
+  properties: {
+    component: { const: 'StratificationToggle' },
+    dim: { type: 'string', default: '' },
+  },
+  required: ['component'],
 }
+
+export default schema

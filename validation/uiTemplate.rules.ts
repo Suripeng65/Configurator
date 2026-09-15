@@ -4,6 +4,7 @@
 import { findComponents, getScope } from "@src/utils/datasources.util"
 import { compareMetaSize } from "./fileSize.util"
 import { findSuspiciousScriptInjection, findSuspiciousSqlInjection,generateMessage } from './security.util'
+export { validComponentSchemas } from '../components/AdaptComponents/validate'
 
 export function requiresName(meta){
     if(!meta?.name?.trim()) return "UI Template must have a name."
